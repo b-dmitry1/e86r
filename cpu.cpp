@@ -5,6 +5,7 @@
 #include "ioports.h"
 #include "disk.h"
 #include "pic_pit.h"
+#include "config.h"
 
 unsigned char ram[RAM_SIZE];
 
@@ -78,7 +79,7 @@ void set_flags(unsigned int value, unsigned int mask)
 
 	value &= ~(F_AC | F_ID);
 
-#ifdef DETECT286
+#if (CPU == 286)
 	if (!(cr[0] & 1))
 		mask &= ~(F_NT | F_IOPL);
 #endif
@@ -102,7 +103,7 @@ void set_flags(unsigned int value, unsigned int mask)
 		dir4 = 4;
 	}
 
-#ifdef DETECT86
+#if (CPU < 286)
 	r.eflags &= 0xFFFF;
 	r.eflags |= 0xF002;
 #endif
@@ -238,7 +239,7 @@ void reset()
 	// cr[0] |= CR0_EM;
 
 	r.eip = 0;
-#ifdef DETECT86
+#if (CPU < 286)
 	set_flags(0xF002, 0xFFFFFFFFu);
 #else
 	set_flags(0x0002, 0xFFFFFFFFu);
@@ -246,10 +247,12 @@ void reset()
 
 	memset(ports, 0xff, sizeof(ports));
 
+	/*
 	ram[0xF1E6E] = CYLS & 0xFF;
 	ram[0xF1E6F] = CYLS >> 8;
 	ram[0xF1E70] = HEADS & 0xFF;
 	ram[0xF1E7C] = SECTORS & 0xFF;
+	*/
 }
 
 const char *r32names[10] = {"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "fl", "eip"};
@@ -325,11 +328,6 @@ void step()
 		return;
 
 	D("%.4X:%.8X       ", cs.value, instr_eip);
-
-	if (COUNT_CYCLES && (vmode == 0x13))
-	{
-		instr_count[opcode]++;
-	}
 
 	if (opcode == 0xCF)
 		wait_iret = 0;

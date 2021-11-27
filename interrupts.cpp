@@ -523,9 +523,10 @@ int iret()
 			if (!set_selector(&cs, ncs, 1))
 				return 0;
 			r.eip = neip;
-#ifndef DETECT486
+#if (CPU < 486)
 			neflags &= ~F_ID;
-#endif			set_flags(neflags, 0xFFFFFFFFu);
+#endif			
+			set_flags(neflags, 0xFFFFFFFFu);
 
 			return 1;
 		}

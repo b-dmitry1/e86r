@@ -114,7 +114,7 @@ void f32_01()
 		case 4:
 			D("smsw ");
 			disasm_mod();
-#ifdef DETECT_FPU
+#if (FPU == 1)
 			cr[0] |= CR0_MP | CR0_ET;
 #else
 			cr[0] &= ~(CR0_MP | CR0_ET);
@@ -338,7 +338,7 @@ void f32_20()
 	D("mov ");
 	disasm_mod();
 	D(", cr%d", (modrm >> 3) & 7);
-#ifdef DETECT_FPU
+#if (FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);
@@ -381,7 +381,7 @@ void f32_22()
 	D("mov cr%d, ", (modrm >> 3) & 7);
 	disasm_mod();
 	readmod(&cr[(modrm >> 3) & 3]);
-#ifdef DETECT_FPU
+#if (FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);
@@ -1508,12 +1508,9 @@ void f32_BA()
 	unsigned char op;
 	if (!mod(0))
 		return;
-
 	if (!fetch8(&b))
 		return;
-
 	b &= 31;
-
 	op = (modrm >> 3) & 7;
 	switch (op)
 	{

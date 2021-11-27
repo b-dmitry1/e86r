@@ -13,6 +13,8 @@ int mouse_x = 0, new_mouse_x = 0;
 int mouse_y = 0, new_mouse_y = 0;
 int mouse_b = 0, new_mouse_b = 0;
 
+unsigned char regs16550[8] = {0};
+
 int scancode(int key)
 {
 	switch (key)
@@ -155,7 +157,7 @@ void check_mouse()
 		mdy = new_mouse_y - mouse_y;
 		mouse_b = new_mouse_b;
 
-		mouse_speed = 1;
+		mouse_speed = 2;
 		high = 0;
 		if (mdx < -mouse_speed)
 			mdx = -mouse_speed;
@@ -180,10 +182,10 @@ void check_mouse()
 		// Mouse Systems
 		mousebuf.put(0x80 | (mouse_b & 1 ? 0 : 4) | 2 | (mouse_b & 2 ? 0 : 1));
 		mdy = -mdy;
-		mousebuf.put(mdx < 0 ? 0xFF : mdx);
-		mousebuf.put(mdy < 0 ? 0xFF : mdy);
-		mousebuf.put(mdx < 0 ? 0 : 0);
-		mousebuf.put(mdy < 0 ? 0 : 0);
+		mousebuf.put(mdx);
+		mousebuf.put(mdy);
+		mousebuf.put(0);
+		mousebuf.put(0);
 #endif
 	}
 
@@ -192,7 +194,6 @@ void check_mouse()
 		if (mousebuf.count())
 			irq(4);
 	}
-
 }
 
 unsigned char keybmouse_portread(unsigned short port)
@@ -217,11 +218,15 @@ unsigned char keybmouse_portread(unsigned short port)
 				// irq(4);
 			return v;
 		case 0x3fd:
-			return 1;
+			return mousebuf.count() ? 1 : 0;
 		case 0x3FA:
+			return (3 << 1) + (mousebuf.count() ? 0 : 1);
 		case 0x3FE:
-			return 0xFF;
+			return 0;//0xFF;
 	}
+
+	if ((port & 0x3f8) == 0x3f8)
+		return regs16550[port & 7];
 
 	return 0;
 }

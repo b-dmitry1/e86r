@@ -35,7 +35,7 @@ unsigned char cga_color_cr = 0;
 unsigned char vga_palette[1024] = {0};
 unsigned int ega_palette[16] = {0};
 int vga_pan = 0;
-unsigned int vram[512 * 1024];
+unsigned int vram[1024 * 1024];
 int vga_3da = 0;
 int vga_pal_mask = 0xFF;
 int vga_pal_index = 0;
@@ -1152,11 +1152,11 @@ unsigned char vga_portread(unsigned short port)
 			{
 				case 0:
 				case 1:
-					return vga_palette[(vga_pal_read_index & (vga_pal_mask << 2)) | 2];
+					return vga_palette[(vga_pal_read_index & (vga_pal_mask << 2)) | 2] >> 2;
 				case 2:
-					return vga_palette[(vga_pal_read_index & (vga_pal_mask << 2)) | 1];
+					return vga_palette[(vga_pal_read_index & (vga_pal_mask << 2)) | 1] >> 2;
 				case 3:
-					return vga_palette[(vga_pal_read_index++ & (vga_pal_mask << 2)) | 0];
+					return vga_palette[(vga_pal_read_index++ & (vga_pal_mask << 2)) | 0] >> 2;
 			}
 			break;
 		case 0x3C4:

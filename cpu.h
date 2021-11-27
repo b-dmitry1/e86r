@@ -1,21 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
 
-#define RAM_SIZE				16777216u
-
-// #define DETECT86
-
-// #define DETECT286
-
-// #define DETECT486
-
-#define DETECT_FPU
-
-#define DEBUG					1
-
-#define DEBUGMEM				0
-
-#define COUNT_CYCLES			0
+#include "config.h"
 
 extern FILE *dasm;
 extern FILE *c0;

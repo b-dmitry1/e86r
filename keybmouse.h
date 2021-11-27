@@ -3,7 +3,7 @@
 #define MOUSE_MS			1
 #define MOUSE_SYSTEMS		2
 
-#define MOUSE_PROTOCOL		MOUSE_MS
+#define MOUSE_PROTOCOL		MOUSE_SYSTEMS
 
 void check_keyb();
 void check_mouse();

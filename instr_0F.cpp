@@ -115,7 +115,7 @@ void f_01()
 		case 4:
 			D("smsw ");
 			disasm_mod();
-#ifdef DETECT_FPU
+#if (FPU == 1)
 			cr[0] |= CR0_MP | CR0_ET;
 #else
 			cr[0] &= ~(CR0_MP | CR0_ET);
@@ -134,15 +134,13 @@ void f_01()
 
 void f_02()
 {
-	unsigned int d, a[2];
-	descr_t desc;
+	unsigned int d;
 	if (!mod(0))
 		return;
 	D("lar ");
 	disasm_mod();
 	if (!readmod(&d))
 		return;
-
 	writemodreg(lar(d));
 	return;
 }
@@ -150,14 +148,12 @@ void f_02()
 void f_03()
 {
 	unsigned int d;
-	descr_t desc;
 	if (!mod(0))
 		return;
 	D("lsl ");
 	disasm_mod();
 	if (!readmod(&d))
 		return;
-
 	writemodreg(lsl(d));
 	return;
 }
@@ -311,7 +307,7 @@ void f_20()
 	disasm_mod();
 	D(", cr%d", (modrm >> 3) & 7);
 	i32 = 1;
-#ifdef DETECT_FPU
+#if (FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);
@@ -337,7 +333,7 @@ void f_22()
 	disasm_mod();
 	i32 = 1;
 	readmod(&cr[(modrm >> 3) & 3]);
-#ifdef DETECT_FPU
+#if (FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);
@@ -1135,7 +1131,7 @@ void f_A2()
 
 void f_A3()
 {
-	unsigned int v32, u32;
+	unsigned int v32;
 	if (!mod(0))
 		return;
 	D("bt ");
@@ -1143,7 +1139,6 @@ void f_A3()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	
 	bt16((int)v32);
 }
 
@@ -1226,9 +1221,7 @@ void f_AA()
 
 void f_AB()
 {
-	unsigned int v32, u32;
-	unsigned int mask;
-	int d;
+	unsigned int v32;
 	D("bts ");
 	if (!mod(0))
 		return;
@@ -1236,7 +1229,6 @@ void f_AB()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	
 	bts16((int)v32);
 }
 
@@ -1330,9 +1322,7 @@ void f_B2()
 
 void f_B3()
 {
-	unsigned int v32, u32;
-	unsigned int mask;
-	int d;
+	unsigned int v32;
 	D("btr ");
 	if (!mod(0))
 		return;
@@ -1340,7 +1330,6 @@ void f_B3()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	
 	btr16((int)v32);
 }
 
@@ -1457,7 +1446,7 @@ void f_B9()
 
 void f_BA()
 {
-	unsigned int d, v;
+	unsigned int d;
 	unsigned char b;
 	unsigned char op;
 	if (!mod(0))
@@ -1466,6 +1455,39 @@ void f_BA()
 		return;
 	if (!fetch8(&b))
 		return;
+	b &= 0x0F;
+	op = (modrm >> 3) & 7;
+	switch (op)
+	{
+		case 4:
+			D("bt ");
+			disasm_mod();
+			D(", %d", b);
+			bt16(b);
+			return;
+		case 5:
+			D("bts ");
+			disasm_mod();
+			D(", %d", b);
+			bts16(b);
+			return;
+		case 6:
+			D("btr ");
+			disasm_mod();
+			D(", %d", b);
+			btr16(b);
+			return;
+		case 7:
+			D("btc ");
+			disasm_mod();
+			D(", %d", b);
+			btc16(b);
+			return;
+	}
+
+	/*
+	return;
+
 	b &= 0x0F;
 	v = 1u << b;
 	if (d & v)
@@ -1499,6 +1521,7 @@ void f_BA()
 			writemod(d ^ v);
 			return;
 	}
+	*/
 }
 
 void f_BB()
@@ -1509,28 +1532,24 @@ void f_BB()
 void f_BC()
 {
 	unsigned int u32;
-	unsigned int u;
 	D("bsf ");
 	if (!mod(0))
 		return;
 	disasm_mod();
 	if (!readmod(&u32))
 		return;
-
 	writemodreg(bsf16(readmodreg(), u32));
 }
 
 void f_BD()
 {
 	unsigned int u32;
-	unsigned int u;
 	D("bsr ");
 	if (!mod(0))
 		return;
 	disasm_mod();
 	if (!readmod(&u32))
 		return;
-
 	writemodreg(bsr16(readmodreg(), u32));
 }
 

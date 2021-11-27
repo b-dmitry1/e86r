@@ -132,7 +132,7 @@ void pic_write(int port, unsigned char value)
 							// Specific EOI command
 							// irqs &= ~(1 << (base + (value & 7)));
 							p->isr &= ~(1 << (value & 7));
-							// if (current_irq == (base + (value & 7)))
+							if (current_irq == (base + (value & 7)))
 								current_irq = -1;
 							break;
 						case 4:

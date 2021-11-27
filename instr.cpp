@@ -1308,7 +1308,7 @@ void i_54()
 	else
 	{
 		D("push sp");
-#ifdef DETECT86
+#if (CPU < 286)
 		push16(r.sp - 2);
 #else
 		push16(r.sp);
@@ -3080,7 +3080,7 @@ void i_9C()
 	else
 	{
 		D("pushf");
-#ifdef DETECT86
+#if (CPU < 286)
 		push16(r.flags | 0xF002);
 #else
 		push16(r.flags | 0x0002);
@@ -3125,7 +3125,7 @@ void i_9D()
 		if (!pop32(&d))
 			return;
 		d |= 0x0002;
-#ifndef DETECT486
+#if (CPU >= 486)
 		d &= ~F_ID;
 #endif
 		set_flags(d, ~mask);
@@ -4959,7 +4959,7 @@ void i_DB()
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-#ifdef DETECT_FPU
+#if (FPU == 1)
 	r.al = 0;
 #endif
 	mod(1);
