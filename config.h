@@ -7,7 +7,7 @@
 #define CPU						486
 
 // Set to 1 to enable FPU detection
-#define FPU						1
+#define FPU						0
 
 
 // Set to 1 to enable debugging
