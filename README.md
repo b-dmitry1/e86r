@@ -38,7 +38,7 @@ Please use Visual Studio 2012 or later version.
 
 ### Porting
 
-There are several WinAPI calls in "vga.cpp" and "main.cpp".
+There are several WinAPI calls in "main.cpp".
 They must be replaced with a target platform's equivalent functions.
 
 16-bit special version of this emulator work very well on a STM32F746 microcontroller board
