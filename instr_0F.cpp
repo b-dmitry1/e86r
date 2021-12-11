@@ -1124,7 +1124,7 @@ void f_A2()
 			r.edx = 0x00000000;
 			break;
 		default:
-			r.eax = r.ebx = r.ecx = r.edx  =0;
+			r.eax = r.ebx = r.ecx = r.edx = 0;
 			break;
 	}
 }
@@ -1139,7 +1139,7 @@ void f_A3()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	bt16((int)v32);
+	bt16((short)v32);
 }
 
 void f_A4()
@@ -1229,7 +1229,7 @@ void f_AB()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	bts16((int)v32);
+	bts16((short)v32);
 }
 
 void f_AC()
@@ -1306,7 +1306,7 @@ void f_B2()
 	unsigned short s, o16;
 	if (!mod(0))
 		return;
-	D("lds ");
+	D("lss ");
 	disasm_modreg();
 	D(", ");
 	disasm_mod();
@@ -1315,7 +1315,7 @@ void f_B2()
 	ofs += 2;
 	if (!read16(sel, ofs, &s))
 		return;
-	if (!set_selector(&ds, s, 1))
+	if (!set_selector(&ss, s, 1))
 		return;
 	writemodreg(o16);
 }
@@ -1330,7 +1330,7 @@ void f_B3()
 	D(", ");
 	disasm_modreg();
 	v32 = readmodreg();
-	btr16((int)v32);
+	btr16((short)v32);
 }
 
 void f_B4()
@@ -1344,28 +1344,14 @@ void f_B4()
 	D(", ");
 	disasm_mod();
 	
-	if (i32)
-	{
-		if (!read32(sel, ofs, &o32))
-			return;
-		ofs += 4;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&fs, s, 1))
-			return;
-		writemodreg(o32);
-	}
-	else
-	{
-		if (!read16(sel, ofs, &o16))
-			return;
-		ofs += 2;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&fs, s, 1))
-			return;
-		writemodreg(o16);
-	}
+	if (!read16(sel, ofs, &o16))
+		return;
+	ofs += 2;
+	if (!read16(sel, ofs, &s))
+		return;
+	if (!set_selector(&fs, s, 1))
+		return;
+	writemodreg(o16);
 }
 
 void f_B5()
@@ -1379,28 +1365,14 @@ void f_B5()
 	D(", ");
 	disasm_mod();
 	
-	if (i32)
-	{
-		if (!read32(sel, ofs, &o32))
-			return;
-		ofs += 4;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&gs, s, 1))
-			return;
-		writemodreg(o32);
-	}
-	else
-	{
-		if (!read16(sel, ofs, &o16))
-			return;
-		ofs += 2;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&gs, s, 1))
-			return;
-		writemodreg(o16);
-	}
+	if (!read16(sel, ofs, &o16))
+		return;
+	ofs += 2;
+	if (!read16(sel, ofs, &s))
+		return;
+	if (!set_selector(&gs, s, 1))
+		return;
+	writemodreg(o16);
 }
 
 void f_B6()
@@ -1526,7 +1498,15 @@ void f_BA()
 
 void f_BB()
 {
-	undefined(0xBB);
+	unsigned int v32;
+	D("btc ");
+	if (!mod(0))
+		return;
+	disasm_mod();
+	D(", ");
+	disasm_modreg();
+	v32 = readmodreg();
+	btc16((short)v32);
 }
 
 void f_BC()

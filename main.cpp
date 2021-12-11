@@ -18,6 +18,75 @@ int ncycles = 2000;
 extern int cyc;
 unsigned long cyctime = 0;
 
+unsigned int scr[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+void set_pixel_2x2(int x, int y, unsigned int color)
+{
+	unsigned int *v;
+	y = SCREEN_HEIGHT / 2 - y - 1;
+	v = &scr[x * 2 + y * 2 * SCREEN_WIDTH];
+	v[0] = color;
+	v[1] = color;
+	v[SCREEN_WIDTH] = color;
+	v[SCREEN_WIDTH + 1] = color;
+}
+
+void set_pixel_2x1(int x, int y, unsigned int color)
+{
+	unsigned int *v;
+	y = SCREEN_HEIGHT - y - 1;
+	v = &scr[x * 2 + y * SCREEN_WIDTH];
+	v[0] = color;
+	v[1] = color;
+}
+
+void set_pixel_1x2(int x, int y, unsigned int color)
+{
+	unsigned int *v;
+	y = SCREEN_HEIGHT / 2 - y - 1;
+	v = &scr[x + y * 2 * SCREEN_WIDTH];
+	v[0] = color;
+	v[SCREEN_WIDTH] = color;
+}
+
+void set_pixel(int x, int y, unsigned int color)
+{
+	unsigned int *v;
+	y = SCREEN_HEIGHT - y - 1;
+	v = &scr[x + y * SCREEN_WIDTH];
+	v[0] = color;
+}
+
+void shutdown()
+{
+	if (dasm == NULL)
+		fopen_s(&dasm, "386.dasm", "wt");
+	D("\tundefined %.2X\n", opcode);
+	terminated = 1;
+	PostMessage(hWnd, WM_CLOSE, 0, 0);
+}
+
+void render_screen(HDC hdc)
+{
+	BITMAPINFO bmi;
+	ZeroMemory(&bmi, sizeof(bmi));
+
+	bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
+	bmi.bmiHeader.biWidth = SCREEN_WIDTH;
+	bmi.bmiHeader.biHeight = SCREEN_HEIGHT;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+	bmi.bmiHeader.biSizeImage = 0;
+	bmi.bmiHeader.biXPelsPerMeter = 96;
+	bmi.bmiHeader.biYPelsPerMeter = 96;
+	bmi.bmiHeader.biClrImportant = 0;
+	bmi.bmiHeader.biClrUsed = 0;
+
+	SetDIBitsToDevice(hdc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0, SCREEN_HEIGHT, scr, &bmi, DIB_RGB_COLORS);
+}
+
+
 void loop()
 {
 	int i;
@@ -58,6 +127,10 @@ void loop()
 	disk_set_fdd(0, "i:\\linuxfd.img", 80, 2, 18);
 
 	disk_set_hdd(0, "c:\\hd500-3.img", 1023, 16, 63);
+	// disk_set_hdd(0, "c:\\hd10meg.img", 306, 4, 17);
+
+	// disk_set_hdd(0, "c:\\hd_oldlinux.img", 1023, 4, 20);
+	// disk_set_hdd(1, "c:\\hd_oldlinux.img", 1023, 4, 20);
 
 	// Main emulator loop
 	while (!terminated)
@@ -136,8 +209,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_PAINT:
 			hdc = BeginPaint(hWnd, &ps);
 
-			update_screen(hdc);
+			update_screen();
 
+			render_screen(hdc);
+			
 			ncyc += cyc;
 
 			t = GetTickCount();

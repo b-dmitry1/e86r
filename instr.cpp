@@ -1481,28 +1481,50 @@ void i_60()
 		D("pushad");
 		unsigned int old_esp;
 		old_esp = r.esp;
-		push32(r.eax);
-		push32(r.ecx);
-		push32(r.edx);
-		push32(r.ebx);
-		push32(old_esp);
-		push32(r.ebp);
-		push32(r.esi);
-		push32(r.edi);
+
+		if (!write32(ss.base + ((r.esp - 4) & ss_mask), r.eax))
+			return;
+		if (!write32(ss.base + ((r.esp - 8) & ss_mask), r.ecx))
+			return;
+		if (!write32(ss.base + ((r.esp - 12) & ss_mask), r.edx))
+			return;
+		if (!write32(ss.base + ((r.esp - 16) & ss_mask), r.ebx))
+			return;
+		if (!write32(ss.base + ((r.esp - 20) & ss_mask), old_esp))
+			return;
+		if (!write32(ss.base + ((r.esp - 24) & ss_mask), r.ebp))
+			return;
+		if (!write32(ss.base + ((r.esp - 28) & ss_mask), r.esi))
+			return;
+		if (!write32(ss.base + ((r.esp - 32) & ss_mask), r.edi))
+			return;
+
+		r.esp = ((r.esp - 32) & ss_inv_mask) | ((r.esp - 32) & ss_mask);
 	}
 	else
 	{
 		D("pusha");
 		unsigned int old_sp;
 		old_sp = r.sp;
-		push16(r.ax);
-		push16(r.cx);
-		push16(r.dx);
-		push16(r.bx);
-		push16(old_sp);
-		push16(r.bp);
-		push16(r.si);
-		push16(r.di);
+
+		if (!write16(ss.base + ((r.esp - 2) & ss_mask), r.ax))
+			return;
+		if (!write16(ss.base + ((r.esp - 4) & ss_mask), r.cx))
+			return;
+		if (!write16(ss.base + ((r.esp - 6) & ss_mask), r.dx))
+			return;
+		if (!write16(ss.base + ((r.esp - 8) & ss_mask), r.bx))
+			return;
+		if (!write16(ss.base + ((r.esp - 10) & ss_mask), old_sp))
+			return;
+		if (!write16(ss.base + ((r.esp - 12) & ss_mask), r.bp))
+			return;
+		if (!write16(ss.base + ((r.esp - 14) & ss_mask), r.si))
+			return;
+		if (!write16(ss.base + ((r.esp - 16) & ss_mask), r.di))
+			return;
+
+		r.esp = ((r.esp - 16) & ss_inv_mask) | ((r.esp - 16) & ss_mask);
 	}
 }
 
@@ -1511,26 +1533,44 @@ void i_61()
 	if (i32)
 	{
 		D("popad");
-		pop32(&r.edi);
-		pop32(&r.esi);
-		pop32(&r.ebp);
-		r.esp += 4;
-		pop32(&r.ebx);
-		pop32(&r.edx);
-		pop32(&r.ecx);
-		pop32(&r.eax);
+
+		if (!read32(ss.base + ((r.esp) & ss_mask), &r.edi))
+			return;
+		if (!read32(ss.base + ((r.esp + 4) & ss_mask), &r.esi))
+			return;
+		if (!read32(ss.base + ((r.esp + 8) & ss_mask), &r.ebp))
+			return;
+		if (!read32(ss.base + ((r.esp + 16) & ss_mask), &r.ebx))
+			return;
+		if (!read32(ss.base + ((r.esp + 20) & ss_mask), &r.edx))
+			return;
+		if (!read32(ss.base + ((r.esp + 24) & ss_mask), &r.ecx))
+			return;
+		if (!read32(ss.base + ((r.esp + 28) & ss_mask), &r.eax))
+			return;
+
+		r.esp = ((r.esp + 32) & ss_inv_mask) | ((r.esp + 32) & ss_mask);
 	}
 	else
 	{
 		D("popa");
-		pop16(&r.di);
-		pop16(&r.si);
-		pop16(&r.bp);
-		r.esp += 2;
-		pop16(&r.bx);
-		pop16(&r.dx);
-		pop16(&r.cx);
-		pop16(&r.ax);
+
+		if (!read16(ss.base + ((r.esp) & ss_mask), &r.di))
+			return;
+		if (!read16(ss.base + ((r.esp + 2) & ss_mask), &r.si))
+			return;
+		if (!read16(ss.base + ((r.esp + 4) & ss_mask), &r.bp))
+			return;
+		if (!read16(ss.base + ((r.esp + 8) & ss_mask), &r.bx))
+			return;
+		if (!read16(ss.base + ((r.esp + 10) & ss_mask), &r.dx))
+			return;
+		if (!read16(ss.base + ((r.esp + 12) & ss_mask), &r.cx))
+			return;
+		if (!read16(ss.base + ((r.esp + 14) & ss_mask), &r.ax))
+			return;
+
+		r.esp = ((r.esp + 16) & ss_inv_mask) | ((r.esp + 16) & ss_mask);
 	}
 }
 
@@ -2311,7 +2351,7 @@ void i_80()
 		return;
 	if (!fetch8(&b))
 		return;
-	if (DEBUG && dasm != NULL)
+	if (DEBUG && (dasm != NULL) && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2450,7 +2490,7 @@ void i_81()
 			return;
 		s = w;
 	}
-	if (DEBUG && dasm != NULL)
+	if (DEBUG && (dasm != NULL) && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2498,8 +2538,8 @@ void i_81()
 	}
 	if (!readmod(&d))
 		return;
-	i81table[(modrm >> 3) & 7](s, d);
-	return;
+	// i81table[(modrm >> 3) & 7](s, d);
+	// return;
 	if (i32)
 	{
 		switch ((modrm >> 3) & 7)
@@ -2579,7 +2619,7 @@ void i_83()
 	s = b;
 	if (s & 0x80)
 		s |= 0xFFFFFF00u;
-	if (DEBUG && dasm != NULL)
+	if (DEBUG && (dasm != NULL) && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2627,8 +2667,8 @@ void i_83()
 	}
 	if (!readmod(&d))
 		return;
-	i81table[(modrm >> 3) & 7](s, d);
-	return;
+	// i81table[(modrm >> 3) & 7](s, d);
+	// return;
 	if (i32)
 	{
 		switch ((modrm >> 3) & 7)
@@ -3063,7 +3103,7 @@ void i_9A()
 void i_9B()
 {
 	D("wait");
-	if (((cr[0] & (CR0_EM | CR0_TS)) == (CR0_EM | CR0_TS)) && (idt_limit > 0))
+	if (((cr[0] & (CR0_MP | CR0_TS)) == (CR0_MP | CR0_TS)) && (idt_limit > 0))
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
@@ -4264,7 +4304,6 @@ void i_C8()
 	nest &= 0x1F;
 	D("enter %d, %d", stack, nest);
 
-
 	unsigned int sp = r.esp & ss_mask;
 	unsigned int bp = r.ebp & ss_mask;
 
@@ -4273,7 +4312,6 @@ void i_C8()
 		sp -= 4;
 		if (!write32(&ss, sp, r.ebp))
 			return;
-		r.ebp = r.esp - 4;
 		if (nest)
 		{
 			for (i = 1; i < nest; i++)
@@ -4286,16 +4324,16 @@ void i_C8()
 					return;
 			}
 			sp -= 4;
-			if (!write32(&ss, sp, r.ebp))
+			if (!write32(&ss, sp, r.esp - 4))
 				return;
 		}
+		r.ebp = r.esp - 4;
 	}
 	else
 	{
 		sp -= 2;
 		if (!write16(&ss, sp, r.bp))
 			return;
-		r.bp = r.sp - 2;
 		if (nest)
 		{
 			for (i = 1; i < nest; i++)
@@ -4308,9 +4346,10 @@ void i_C8()
 					return;
 			}
 			sp -= 2;
-			if (!write16(&ss, sp, r.bp))
+			if (!write16(&ss, sp, r.sp - 2))
 				return;
 		}
+		r.bp = r.sp - 2;
 	}
 
 	sp -= stack;
@@ -4918,43 +4957,43 @@ void i_D8()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_D9()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_DA()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_DB()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
@@ -4962,55 +5001,55 @@ void i_DB()
 #if (FPU == 1)
 	r.al = 0;
 #endif
-	mod(1);
+	mod(0);
 }
 
 void i_DC()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_DD()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_DE()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_DF()
 {
 	D("math");
 	num_math++;
-	if ((cr[0] & CR0_EM) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
+	if ((cr[0] & (CR0_EM | CR0_TS)) && (idt_limit > 0))// && (cr[0] & CR0_PE) && 1)
 	{
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-	mod(1);
+	mod(0);
 }
 
 void i_E0()
@@ -5527,6 +5566,8 @@ void i_F7()
 				
 				memcpy(pres64, &r.eax, 4);
 				memcpy(&pres64[4], &r.edx, 4);
+
+				res64 = ((unsigned long long)r.edx << 32) | r.eax;
 				div32(res64, v32, &q32, &rm32);
 				r.eax = q32;
 				r.edx = rm32;
@@ -5724,8 +5765,8 @@ void i_FF()
 
 				if (!readmod(&d))
 					return;
-				push32(r.eip);
-				r.eip = d;
+				if (push32(r.eip))
+					r.eip = d;
 				break;
 			case 3:
 				// call far [ea]
@@ -5805,8 +5846,8 @@ void i_FF()
 				disasm_mod();
 				if (!readmod(&d))
 					return;
-				push16(r.ip);
-				r.eip = d;
+				if (push16(r.ip))
+					r.eip = d;
 				break;
 			case 3:
 				// call far [ea]

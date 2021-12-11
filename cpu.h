@@ -3,6 +3,7 @@
 
 #include "config.h"
 
+#if (PC)
 extern FILE *dasm;
 extern FILE *c0;
 
@@ -26,6 +27,32 @@ extern FILE *c0;
 
 #ifndef GPV
 #define GPV(cond, code)	if ((cond)) { ex(EX_GP, code); if (DEBUG && dasm != NULL) fprintf(dasm, "\texception GP(%x): %s\n", code, #cond); return; }
+#endif
+
+#else
+
+#define D(...)		{}
+
+#ifndef GP
+#define GP(cond, code)	if ((cond)) { ex(EX_GP, code); return 0; }
+#endif
+
+#ifndef SS
+#define SS(cond, code)	if ((cond)) { ex(EX_STACK, code); return 0; }
+#endif
+
+#ifndef NP
+#define NP(cond, code)	if ((cond)) { ex(EX_SEGMENT_NOT_PRESENT, code); return 0; }
+#endif
+
+#ifndef TS
+#define TS(cond, code)	if ((cond)) { ex(EX_INVALID_TSS, code); return 0; }
+#endif
+
+#ifndef GPV
+#define GPV(cond, code)	if ((cond)) { ex(EX_GP, code); return; }
+#endif
+
 #endif
 
 

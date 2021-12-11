@@ -70,8 +70,12 @@ unsigned char opcode;
 
 extern void (*instrs[256])();
 
+#if (PC)
 FILE *dasm = NULL;
 FILE *c0 = NULL;
+#endif
+
+void shutdown();
 
 void set_flags(unsigned int value, unsigned int mask)
 {
@@ -317,17 +321,21 @@ void step()
 		instr_fl = r.eflags;
 	}
 
+#if (PC)
 	if ((dasm == NULL) && (open_log))
 	{
-		fopen_s(&dasm, "c:\\nasm\\v86\\386.dasm", "wt");
+		fopen_s(&dasm, "386.dasm", "wt");
 
 		cycle = 0;
 	}
+#endif
 
 	if (!fetch8(&opcode))
 		return;
 
 	D("%.4X:%.8X       ", cs.value, instr_eip);
+
+	D("%.2X  ", opcode);
 
 	if (opcode == 0xCF)
 		wait_iret = 0;
@@ -338,7 +346,7 @@ void step()
 
 	D("\n");
 
-	if (DEBUG && (dasm != NULL) && 1)
+	if (DEBUG && (dasm != NULL) && PC)
 	{
 		D("  ax: %.8X\n", r.eax);
 		D("  bx: %.8X\n", r.ebx);
@@ -355,12 +363,11 @@ void step()
 	}
 }
 
+#if (PC)
 extern HWND hWnd;
+#endif
+
 void undefined_instr()
 {
-	if (dasm == NULL)
-		fopen_s(&dasm, "c:\\nasm\\v86\\386.dasm", "wt");
-	D("\tundefined %.2X\n", opcode);
-	terminated = 1;
-	PostMessage(hWnd, WM_CLOSE, 0, 0);
+	shutdown();
 }

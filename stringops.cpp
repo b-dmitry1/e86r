@@ -4,6 +4,8 @@
 #include "alu.h"
 #include "ioports.h"
 
+#define FAST_DIR	1
+
 int movsb()
 {
 	unsigned char v;
@@ -13,6 +15,10 @@ int movsb()
 			return 0;
 		if (!write8(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.esi += dir1;
+		r.edi += dir1;
+#else
 		if (r.eflags & F_D)
 		{
 			r.esi -= sizeof(v);
@@ -23,6 +29,7 @@ int movsb()
 			r.esi += sizeof(v);
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
@@ -30,6 +37,10 @@ int movsb()
 			return 0;
 		if (!write8(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.si += dir1;
+		r.di += dir1;
+#else
 		if (r.eflags & F_D)
 		{
 			r.si -= sizeof(v);
@@ -40,6 +51,7 @@ int movsb()
 			r.si += sizeof(v);
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }
@@ -53,6 +65,10 @@ int movsw()
 			return 0;
 		if (!write16(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.esi += dir2;
+		r.edi += dir2;
+#else
 		if (r.eflags & F_D)
 		{
 			r.esi -= sizeof(v);
@@ -63,6 +79,7 @@ int movsw()
 			r.esi += sizeof(v);
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
@@ -70,6 +87,10 @@ int movsw()
 			return 0;
 		if (!write16(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.si += dir2;
+		r.di += dir2;
+#else
 		if (r.eflags & F_D)
 		{
 			r.si -= sizeof(v);
@@ -80,6 +101,7 @@ int movsw()
 			r.si += sizeof(v);
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }
@@ -93,6 +115,10 @@ int movsd()
 			return 0;
 		if (!write32(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.esi += dir4;
+		r.edi += dir4;
+#else
 		if (r.eflags & F_D)
 		{
 			r.esi -= sizeof(v);
@@ -103,6 +129,7 @@ int movsd()
 			r.esi += sizeof(v);
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
@@ -110,6 +137,10 @@ int movsd()
 			return 0;
 		if (!write32(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.si += dir4;
+		r.di += dir4;
+#else
 		if (r.eflags & F_D)
 		{
 			r.si -= sizeof(v);
@@ -120,6 +151,7 @@ int movsd()
 			r.si += sizeof(v);
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }
@@ -131,6 +163,9 @@ int stosb()
 	{
 		if (!write8(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.edi += dir1;
+#else
 		if (r.eflags & F_D)
 		{
 			r.edi -= sizeof(v);
@@ -139,11 +174,15 @@ int stosb()
 		{
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
 		if (!write8(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.di += dir1;
+#else
 		if (r.eflags & F_D)
 		{
 			r.di -= sizeof(v);
@@ -152,6 +191,7 @@ int stosb()
 		{
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }
@@ -163,6 +203,9 @@ int stosw()
 	{
 		if (!write16(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.edi += dir2;
+#else
 		if (r.eflags & F_D)
 		{
 			r.edi -= sizeof(v);
@@ -171,12 +214,16 @@ int stosw()
 		{
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
 		writephys16(es.base + r.di, v);
 		if (!write16(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.di += dir2;
+#else
 		if (r.eflags & F_D)
 		{
 			r.di -= sizeof(v);
@@ -185,6 +232,7 @@ int stosw()
 		{
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }
@@ -196,6 +244,9 @@ int stosd()
 	{
 		if (!write32(&es, r.edi, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.edi += dir4;
+#else
 		if (r.eflags & F_D)
 		{
 			r.edi -= sizeof(v);
@@ -204,11 +255,15 @@ int stosd()
 		{
 			r.edi += sizeof(v);
 		}
+#endif
 	}
 	else
 	{
 		if (!write32(&es, r.di, v))
 			return 0;
+#if (FAST_DIR == 1)
+		r.di += dir4;
+#else
 		if (r.eflags & F_D)
 		{
 			r.di -= sizeof(v);
@@ -217,6 +272,7 @@ int stosd()
 		{
 			r.di += sizeof(v);
 		}
+#endif
 	}
 	return 1;
 }

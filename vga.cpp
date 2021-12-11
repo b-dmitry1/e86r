@@ -18,8 +18,6 @@
 #define VMODE_VGA320x200	0x13
 #define VMODE_VGA640x480x8	0x14
 
-unsigned int screen[SCREEN_WIDTH * SCREEN_HEIGHT];
-
 typedef union
 {
 	unsigned char b[4];
@@ -407,40 +405,6 @@ const unsigned long palcga[5][4] = {
 	{BGR(0, 0, 0), BGR(0, 0, 255), BGR(64, 192, 192), BGR(255, 255, 255)}
 };
 
-void set_pixel_320(int x, int y, unsigned int color)
-{
-	unsigned int *v;
-	y = SCREEN_HEIGHT / 2 - y - 1;
-	v = &screen[x * 2 + y * 2 * SCREEN_WIDTH];
-	v[0] = color;
-	v[1] = color;
-	v[SCREEN_WIDTH] = color;
-	v[SCREEN_WIDTH + 1] = color;
-}
-
-void set_pixel_320h(int x, int y, unsigned int color)
-{
-	unsigned int *v;
-	y = SCREEN_HEIGHT - y - 1;
-	v = &screen[x * 2 + y * SCREEN_WIDTH];
-	v[0] = color;
-	v[1] = color;
-}
-
-void set_pixel(int x, int y, unsigned int color)
-{
-	if ((x < 0) || (y < 0) || (x >= SCREEN_WIDTH) || (y >= SCREEN_HEIGHT))
-		return;
-	y = SCREEN_HEIGHT - y - 1;
-	screen[x + y * SCREEN_WIDTH] = color;
-}
-
-void set_pixel_fast(int x, int y, unsigned int color)
-{
-	y = SCREEN_HEIGHT - y - 1;
-	screen[x + y * SCREEN_WIDTH] = color;
-}
-
 void CGADrawChar8x8(int x, int y, int ch, int attr)
 {
 	int i, j;
@@ -455,7 +419,7 @@ void CGADrawChar8x8(int x, int y, int ch, int attr)
 		for (j = 0, m = 0x80; j < 8; j++)
 		{
 			b = *f;
-			set_pixel_320(x + j, y + i, b & m ? fg : bg);
+			set_pixel_2x2(x + j, y + i, b & m ? fg : bg);
 			m >>= 1;
 		}
 		f++;
@@ -476,7 +440,7 @@ void CGADrawChar8x16r(int x, int y, int ch, int attr)
 		for (j = 0, m = 0x01; j < 8; j++)
 		{
 			b = *f;
-			screen[x + j + (SCREEN_HEIGHT - (y + i + 1)) * SCREEN_WIDTH] = b & m ? fg : bg;
+			set_pixel(x + j, y + i, b & m ? fg : bg);
 			m <<= 1;
 		}
 		f++;
@@ -497,7 +461,7 @@ void CGADrawChar8x16(int x, int y, int ch, int attr)
 		for (j = 0, m = 0x80; j < 8; j++)
 		{
 			b = *f;
-			screen[x + j + (SCREEN_HEIGHT - (y + i + 1)) * SCREEN_WIDTH] = b & m ? fg : bg;
+			set_pixel(x + j, y + i, b & m ? fg : bg);
 			m >>= 1;
 		}
 		f++;
@@ -519,7 +483,7 @@ void update_screen_text40_color()
 			if ((i == cy) && (j == cx))
 				if (blink)
 					for (k = 0; k < 8; k++)
-						screen[k + j * 8 + (SCREEN_HEIGHT - (i * 8 + 7)) * SCREEN_WIDTH] = pal16[p[1] & 0x0F];
+						set_pixel(k + j * 8, i * 8 + 7, pal16[p[1] & 0x0F]);
 			p += 2;
 		}
 	}
@@ -534,8 +498,6 @@ void update_screen_text80_color()
 	p += (crt_regs[12] * 256 + crt_regs[13]) * 2;
 	cur -= crt_regs[12] * 256 + crt_regs[13];
 
-	memset(screen, 0, sizeof(screen));
-
 	int cx = cur % 80;
 	int cy = cur / 80;
 	for (i = 0; i < 25; i++)
@@ -546,7 +508,7 @@ void update_screen_text80_color()
 			if ((i == cy) && (j == cx))
 				if (blink)
 					for (k = 0; k < 8; k++)
-						screen[k + j * 8 + (SCREEN_HEIGHT - (i * 16 + 15)) * SCREEN_WIDTH] = pal16[p[1] & 0x0F];
+						set_pixel(k + j * 8, i * 16 + 15, pal16[p[1] & 0x0F]);
 			p += 2;
 		}
 	}
@@ -591,10 +553,7 @@ void update_screen_col320x200()
 			{
 				c = palcga[cgapalindex][(b >> 6) & 3];
 				b <<= 2;
-				screen[k * 2 + j * 2 + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + 1 + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + 1 + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
+				set_pixel_2x2(k + j, i, c);
 			}
 		}
 	}
@@ -608,10 +567,7 @@ void update_screen_col320x200()
 			{
 				c = palcga[cgapalindex][(b >> 6) & 3];
 				b <<= 2;
-				screen[k * 2 + j * 2 + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + 1 + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
-				screen[k * 2 + j * 2 + 1 + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
+				set_pixel_2x2(k + j, i, c);
 			}
 		}
 	}
@@ -636,7 +592,7 @@ void update_screen_ega320x200()
 				{
 					c = pal16_pcjr[(b >> 4) & 15];
 					b <<= 4;
-					set_pixel_320(k + j, i, c);
+					set_pixel_2x2(k + j, i, c);
 				}
 			}
 		}
@@ -654,7 +610,7 @@ void update_screen_vga320x200()
 	{
 		for (j = 0; j < 320; j++)
 		{
-			set_pixel_320(j, i, pal[*p++]);
+			set_pixel_2x2(j, i, pal[*p++]);
 		}
 	}
 }
@@ -671,7 +627,7 @@ void update_screen_vga640x480x8()
 	{
 		for (j = 0; j < 640; j++)
 		{
-			screen[j + (SCREEN_HEIGHT - i - 1) * SCREEN_WIDTH] = pal[*p++];
+			set_pixel(j, i, pal[*p++]);
 		}
 		p += vga_pan;
 	}
@@ -717,18 +673,15 @@ void update_screen_vga320x200x()
 				b = d;
 				c = pal[b];
 				if (j - pixel_shift >= 0)
-					set_pixel_320h(j - pixel_shift, i, c);
+					set_pixel_2x1(j - pixel_shift, i, c);
 			}
 			p += vga_pan;
 		}
 		return;
 	}
 
-	unsigned int *v;
-
 	for (i = 0; i < lines; i++)
 	{
-		v = &screen[(SCREEN_HEIGHT / 2 - i - 1) * 2 * SCREEN_WIDTH];
 		for (j = 0; j < 320; j++)
 		{
 			if ((j & 3) == 0)
@@ -737,11 +690,7 @@ void update_screen_vga320x200x()
 				d >>= 8;
 			b = d;
 			c = pal[b];
-			v[0] = c;
-			v[1] = c;
-			v[SCREEN_WIDTH] = c;
-			v[SCREEN_WIDTH + 1] = c;
-			v += 2;
+			set_pixel_2x2(j, i, c);
 		}
 		p += vga_pan;
 	}
@@ -763,8 +712,7 @@ void update_screen_bw640x200()
 			{
 				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
 				b <<= 1;
-				screen[k + j + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k + j + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
+				set_pixel_1x2(k + j, i, c);
 			}
 		}
 		if (p >= &ram[0xba000])
@@ -780,8 +728,7 @@ void update_screen_bw640x200()
 			{
 				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
 				b <<= 1;
-				screen[k + j + (SCREEN_HEIGHT - i * 2 - 2) * SCREEN_WIDTH] = c;
-				screen[k + j + (SCREEN_HEIGHT - i * 2 - 1) * SCREEN_WIDTH] = c;
+				set_pixel_1x2(k + j, i, c);
 			}
 		}
 		if (p >= &ram[0xbc000])
@@ -805,7 +752,7 @@ void update_screen_bw640x480()
 			{
 				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
 				b <<= 1;
-				screen[k + j + (SCREEN_HEIGHT - i - 1) * SCREEN_WIDTH] = c;
+				set_pixel(k + j, i, c);
 			}
 		}
 	}
@@ -837,7 +784,7 @@ void update_screen_ega320x200d()
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
 
-				set_pixel_320(j + k, i, BGR(vga_palette[c * 3] << 2, vga_palette[c * 3 + 1] << 2, vga_palette[c * 3 + 2] << 2));
+				set_pixel_2x2(j + k, i, BGR(vga_palette[c * 3] << 2, vga_palette[c * 3 + 1] << 2, vga_palette[c * 3 + 2] << 2));
 			}
 		}
 		p += vga_pan;
@@ -868,7 +815,7 @@ void update_screen_ega640x350()
 				c |= (b & 0x800000) ? 4 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
-				screen[k + j + (SCREEN_HEIGHT - i - 1) * SCREEN_WIDTH] = ega_palette[c];
+				set_pixel(k + j, i, ega_palette[c]);
 			}
 		}
 		p += vga_pan;
@@ -894,15 +841,14 @@ void update_screen_vga640x480()
 				c |= (b & 0x800000) ? 4 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
-				screen[k + j + (SCREEN_HEIGHT - i - 1) * SCREEN_WIDTH] = ega_palette[c];
+				set_pixel(k + j, i, ega_palette[c]);
 			}
 		}
 	}
 }
 
-void update_screen(HDC hdc)
+void update_screen()
 {
-	BITMAPINFO bmi;
 	vga_lines = 400;
 	switch (vmode)
 	{
@@ -949,22 +895,6 @@ void update_screen(HDC hdc)
 			update_screen_vga640x480x8();
 			break;
 	}
-
-	ZeroMemory(&bmi, sizeof(bmi));
-
-	bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
-	bmi.bmiHeader.biWidth = SCREEN_WIDTH;
-	bmi.bmiHeader.biHeight = SCREEN_HEIGHT;
-	bmi.bmiHeader.biPlanes = 1;
-	bmi.bmiHeader.biBitCount = 32;
-	bmi.bmiHeader.biCompression = BI_RGB;
-	bmi.bmiHeader.biSizeImage = 0;
-	bmi.bmiHeader.biXPelsPerMeter = 96;
-	bmi.bmiHeader.biYPelsPerMeter = 96;
-	bmi.bmiHeader.biClrImportant = 0;
-	bmi.bmiHeader.biClrUsed = 0;
-
-	SetDIBitsToDevice(hdc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0, SCREEN_HEIGHT, screen, &bmi, DIB_RGB_COLORS);
 }
 
 // Windows working good

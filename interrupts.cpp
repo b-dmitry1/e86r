@@ -79,7 +79,7 @@ void interrupt(int n, int errorcode, int intflags)
 		r.flags &= ~(F_I | F_T);
 		read16(idt_base + n * 4, &ip16);
 		read16(idt_base + n * 4 + 2, &cs16);
-		set_selector(&cs, cs16);
+		set_selector(&cs, cs16, 1);
 		r.eip = ip16;
 		return;
 	}
@@ -489,10 +489,12 @@ void ex(int n, int errorcode)
 	else
 		num_ex++;
 
+	
 	cs = instr_cs;
 	ss = instr_ss;
 	r.esp = instr_esp;
 	set_flags(instr_fl, 0xFFFFFFFFu);
+	
 
 	if ((n != 3) && (n != 4) && (n != 9))
 		r.eip = instr_eip;

@@ -616,6 +616,10 @@ int write32(unsigned int addr, unsigned int v)
 
 int read8(selector_t *s, unsigned int addr, unsigned char *v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -631,6 +635,10 @@ int read8(selector_t *s, unsigned int addr, unsigned char *v)
 
 int read16(selector_t *s, unsigned int addr, unsigned short *v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -646,6 +654,10 @@ int read16(selector_t *s, unsigned int addr, unsigned short *v)
 
 int read32(selector_t *s, unsigned int addr, unsigned int *v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -661,6 +673,10 @@ int read32(selector_t *s, unsigned int addr, unsigned int *v)
 
 int write8(selector_t *s, unsigned int addr, unsigned char v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -675,6 +691,10 @@ int write8(selector_t *s, unsigned int addr, unsigned char v)
 
 int write16(selector_t *s, unsigned int addr, unsigned short v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -689,6 +709,10 @@ int write16(selector_t *s, unsigned int addr, unsigned short v)
 
 int write32(selector_t *s, unsigned int addr, unsigned int v)
 {
+	if (!a32)
+		;//addr &= 0xFFFFu;
+	if (!s->big)
+		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)
@@ -889,26 +913,14 @@ int push16(unsigned short value)
 {
 	if (!paging && 0)
 	{
-		r.esp = (r.esp & ss_inv_mask) | ((r.esp - 2) & ss_mask);
+		r.esp = ((r.esp - 2) & ss_inv_mask) | ((r.esp - 2) & ss_mask);
 		*(unsigned short *)&ram[ss.base + (r.esp & ss_mask)] = value;
 		return 1;
 	}
 	
 	if (!write16fast(ss.base + ((r.esp - 2) & ss_mask), value))
 		return 0;
-	r.esp = (r.esp & ss_inv_mask) | ((r.esp - 2) & ss_mask);
-	return 1;
-
-	if (ss.big)
-	{
-		if (!write16fast(ss.base + r.esp - 2, value))
-			return 0;
-		r.esp -= 2;
-		return 1;
-	}
-	if (!write16(&ss, (r.sp - 2) & 0xFFFFu, value))
-		return 0;
-	r.sp -= 2;
+	r.esp = ((r.esp - 2) & ss_inv_mask) | ((r.esp - 2) & ss_mask);
 	return 1;
 }
 
@@ -916,25 +928,13 @@ int push32(unsigned int value)
 {
 	if (!paging && 0)
 	{
-		r.esp = (r.esp & ss_inv_mask) | ((r.esp - 4) & ss_mask);
+		r.esp = ((r.esp - 4) & ss_inv_mask) | ((r.esp - 4) & ss_mask);
 		*(unsigned int *)&ram[ss.base + (r.esp & ss_mask)] = value;
 		return 1;
 	}
 	if (!write32fast(ss.base + ((r.esp - 4) & ss_mask), value))
 		return 0;
-	r.esp = (r.esp & ss_inv_mask) | ((r.esp - 4) & ss_mask);
-	return 1;
-
-	if (ss.big)
-	{
-		if (!write32fast(ss.base + r.esp - 4, value))
-			return 0;
-		r.esp -= 4;
-		return 1;
-	}
-	if (!write32(&ss, (r.sp - 4) & 0xFFFFu, value))
-		return 0;
-	r.sp -= 4;
+	r.esp = ((r.esp - 4) & ss_inv_mask) | ((r.esp - 4) & ss_mask);
 	return 1;
 }
 
@@ -943,25 +943,13 @@ int pop16(unsigned short *value)
 	if (!paging && 0)
 	{
 		*value = *(unsigned short *)&ram[ss.base + (r.esp & ss_mask)];
-		r.esp = (r.esp & ss_inv_mask) | ((r.esp + 2) & ss_mask);
+		r.esp = ((r.esp + 2) & ss_inv_mask) | ((r.esp + 2) & ss_mask);
 		return 1;
 	}
 
 	if (!read16fast(ss.base + (r.esp & ss_mask), value))
 		return 0;
-	r.esp = (r.esp & ss_inv_mask) | ((r.esp + 2) & ss_mask);
-	return 1;
-
-	if (ss.big)
-	{
-		if (!read16fast(ss.base + r.esp, value))
-			return 0;
-		r.esp += 2;
-		return 1;
-	}
-	if (!read16(&ss, r.sp, value))
-		return 0;
-	r.sp += 2;
+	r.esp = ((r.esp + 2) & ss_inv_mask) | ((r.esp + 2) & ss_mask);
 	return 1;
 }
 
@@ -970,24 +958,12 @@ int pop32(unsigned int *value)
 	if (!paging && 0)
 	{
 		*value = *(unsigned int *)&ram[ss.base + (r.esp & ss_mask)];
-		r.esp = (r.esp & ss_inv_mask) | ((r.esp + 4) & ss_mask);
+		r.esp = ((r.esp + 4) & ss_inv_mask) | ((r.esp + 4) & ss_mask);
 		return 1;
 	}
 	if (!read32fast(ss.base + (r.esp & ss_mask), value))
 		return 0;
-	r.esp = (r.esp & ss_inv_mask) | ((r.esp + 4) & ss_mask);
-	return 1;
-
-	if (ss.big)
-	{
-		if (!read32fast(ss.base + r.esp, value))
-			return 0;
-		r.esp += 4;
-		return 1;
-	}
-	if (!read32(&ss, r.sp, value))
-		return 0;
-	r.sp += 4;
+	r.esp = ((r.esp + 4) & ss_inv_mask) | ((r.esp + 4) & ss_mask);
 	return 1;
 }
 

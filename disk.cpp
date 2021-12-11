@@ -376,7 +376,7 @@ void ide_write(int port, unsigned char value)
 			ch->have_data = 0;
 			break;
 		case 0x1F6:
-			d->drive = (value & 0x10) ? 1 : 0;
+			// d->drive = (value & 0x10) ? 1 : 0;
 			d->head = value & 0x0F;
 			// d->lba =  (value & 0x40) ? 1 : 0;
 			ch->have_data = 0;
@@ -451,12 +451,12 @@ unsigned char ide_read(int port)
 	int drive = get_drive_number_by_port(port);
 
 	if (drive >= NUM_HDD)
-		return 0x21;
+		return 0;//x21;
 
 	d = &hdd[drive];
 
 	if (d->fp == NULL)
-		return 0x21;
+		return 0;//x21;
 
 	switch (port | 0x80)
 	{
@@ -504,7 +504,7 @@ unsigned char ide_read(int port)
 			r = ((d->have_data) ? 0x08 : 0) | 0x50;
 			break;
 		case 0x3F6:
-			d->irq = 0;
+			// d->irq = 0;
 			r = ((d->have_data) ? 0x08 : 0) | 0x50;
 			break;
 		case 0x3F7:

@@ -1,5 +1,10 @@
 #pragma once
 
+// Platform and compiler
+#define PC						1
+#define STM32					0
+
+
 // System RAM size
 #define RAM_SIZE				16777216u
 
@@ -14,7 +19,7 @@
 #define DEBUG					1
 
 // Set to 1 to add memory access to disasm file
-#define DEBUGMEM				0
+#define DEBUGMEM				1
 
 #define DEBUG_FILE_NAME			"debug.txt"
 
@@ -28,4 +33,4 @@
 
 
 // Set to 1 if you don't want to see registers in the main window
-#define SET_WINDOW_CLIENT_SIZE	1
+#define SET_WINDOW_CLIENT_SIZE	0

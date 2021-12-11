@@ -143,21 +143,7 @@ void f32_02()
 	disasm_mod();
 	if (!readmod(&u32))
 		return;
-
 	writemodreg(lar(u32));
-	return;
-
-	r.flags &= ~F_Z;
-	if (u32 < 4)
-		return;
-	if (!get_descr(&desc, u32))
-		return;
-	if (desc.present)
-	{
-		memcpy(a, &desc, 8);
-		writemodreg(a[1] & 0x00FFFF00u);
-		r.flags |= F_Z;
-	}
 }
 
 void f32_03()
@@ -170,24 +156,7 @@ void f32_03()
 	disasm_mod();
 	if (!readmod(&d))
 		return;
-
 	writemodreg(lsl(d));
-	return;
-
-	r.flags &= ~F_Z;
-	if (d < 4)
-		return;
-	if (!get_descr(&desc, d))
-		return;
-	if (desc.present)
-	{
-		d = get_limit(&desc);
-		writemodreg(d);
-		r.flags |= F_Z;
-	}
-	else
-	{
-	}
 }
 
 void f32_04()
@@ -1175,7 +1144,30 @@ void f32_A1()
 void f32_A2()
 {
 	// CPUID
-	undefined32(0xA2);
+	D("cpuid");
+	switch (r.eax)
+	{
+		case 0:
+			r.eax = 1;
+			r.ebx = 'G' | ('e' << 8u) | ('n' << 16u) | ('u' << 24u); 
+			r.edx = 'i' | ('n' << 8u) | ('e' << 16u) | ('I' << 24u); 
+			r.ecx = 'n' | ('t' << 8u) | ('e' << 16u) | ('l' << 24u); 
+
+			r.ebx = 'A' | ('u' << 8u) | ('t' << 16u) | ('h' << 24u); 
+			r.edx = 'e' | ('n' << 8u) | ('t' << 16u) | ('i' << 24u); 
+			r.ecx = 'c' | ('A' << 8u) | ('M' << 16u) | ('D' << 24u); 
+
+			break;
+		case 1:
+			r.eax = 0x402;
+			r.ebx = 0;
+			r.ecx = 0;
+			r.edx = 0x00000000;
+			break;
+		default:
+			r.eax = r.ebx = r.ecx = r.edx = 0;
+			break;
+	}
 }
 
 void f32_A3()
@@ -1360,8 +1352,6 @@ void f32_B2()
 	disasm_modreg();
 	D(", ");
 	disasm_mod();
-	if (dasm != NULL)
-		fflush(dasm);
 	if (!read32(sel, ofs, &o32))
 		return;
 	ofs += 4;
@@ -1397,28 +1387,14 @@ void f32_B4()
 	D(", ");
 	disasm_mod();
 	
-	if (i32)
-	{
-		if (!read32(sel, ofs, &o32))
-			return;
-		ofs += 4;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&fs, s, 1))
-			return;
-		writemodreg(o32);
-	}
-	else
-	{
-		if (!read16(sel, ofs, &o16))
-			return;
-		ofs += 2;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&fs, s, 1))
-			return;
-		writemodreg(o16);
-	}
+	if (!read32(sel, ofs, &o32))
+		return;
+	ofs += 4;
+	if (!read16(sel, ofs, &s))
+		return;
+	if (!set_selector(&fs, s, 1))
+		return;
+	writemodreg(o32);
 }
 
 void f32_B5()
@@ -1432,28 +1408,14 @@ void f32_B5()
 	D(", ");
 	disasm_mod();
 	
-	if (i32)
-	{
-		if (!read32(sel, ofs, &o32))
-			return;
-		ofs += 4;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&gs, s, 1))
-			return;
-		writemodreg(o32);
-	}
-	else
-	{
-		if (!read16(sel, ofs, &o16))
-			return;
-		ofs += 2;
-		if (!read16(sel, ofs, &s))
-			return;
-		if (!set_selector(&gs, s, 1))
-			return;
-		writemodreg(o16);
-	}
+	if (!read32(sel, ofs, &o32))
+		return;
+	ofs += 4;
+	if (!read16(sel, ofs, &s))
+		return;
+	if (!set_selector(&gs, s, 1))
+		return;
+	writemodreg(o32);
 }
 
 void f32_B6()
@@ -1462,13 +1424,16 @@ void f32_B6()
 	D("movzx ");
 	if (!mod(1))
 		return;
-	if (!readmod(&d))
-		return;
+
 	modrm_byte = 0;
 	disasm_modreg();
 	modrm_byte = 1;
 	D(", ");
 	disasm_mod();
+
+	modrm_byte = 1;
+	if (!readmod(&d))
+		return;
 	modrm_byte = 0;
 	writemodreg(d & 0xFF);
 }
@@ -1479,6 +1444,12 @@ void f32_B7()
 	D("movzx ");
 	if (!mod(0))
 		return;
+
+	disasm_modreg();
+	D(", ");
+	i32 = 0;
+	disasm_mod();
+
 	i32 = 0;
 	if (!readmod(&d))
 	{
@@ -1486,9 +1457,6 @@ void f32_B7()
 		return;
 	}
 	i32 = 1;
-	disasm_modreg();
-	D(", ");
-	disasm_mod();
 	writemodreg(d & 0xFFFFu);
 }
 
@@ -1561,6 +1529,8 @@ void f32_BC()
 	D("bsf ");
 	if (!mod(0))
 		return;
+	disasm_modreg();
+	D(", ");
 	disasm_mod();
 	if (!readmod(&u32))
 		return;
@@ -1574,6 +1544,8 @@ void f32_BD()
 	D("bsr ");
 	if (!mod(0))
 		return;
+	disasm_modreg();
+	D(", ");
 	disasm_mod();
 	if (!readmod(&u32))
 		return;
@@ -1587,13 +1559,17 @@ void f32_BE()
 	D("movsx ");
 	if (!mod(1))
 		return;
-	if (!readmod(&d))
-		return;
+
 	modrm_byte = 0;
 	disasm_modreg();
 	modrm_byte = 1;
 	D(", ");
 	disasm_mod();
+
+	modrm_byte = 1;
+	if (!readmod(&d))
+		return;
+
 	modrm_byte = 0;
 	if (d & 0x80)
 		d |= 0xFFFFFF00u;
@@ -1606,6 +1582,13 @@ void f32_BF()
 	D("movsx ");
 	if (!mod(0))
 		return;
+
+	i32 = 0;
+	disasm_modreg();
+	D(", ");
+	i32 = 1;
+	disasm_mod();
+
 	i32 = 0;
 	if (!readmod(&d))
 	{
@@ -1613,9 +1596,6 @@ void f32_BF()
 		return;
 	}
 	i32 = 1;
-	disasm_modreg();
-	D(", ");
-	disasm_mod();
 	if (d & 0x8000)
 		d |= 0xFFFF0000u;
 	writemodreg(d);

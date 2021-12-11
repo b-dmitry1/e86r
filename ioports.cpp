@@ -121,7 +121,7 @@ void portwrite8(unsigned short port, unsigned char v)
 			break;
 		case 0x92:
 			a20 = (v & 0x02) != 0;
-			a20mask = a20 ? 0xFFFFFFFFu : 0xFFFFFu;
+			// a20mask = a20 ? 0xFFFFFFFFu : 0xFFFFFu;
 			break;
 		case 0xBE:
 			vmode = v;

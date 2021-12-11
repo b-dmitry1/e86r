@@ -67,7 +67,8 @@ int switch_task(unsigned int newtss, int type)
 	// On interrupt or CALL FAR TSS:0 save backlink and set NT
 	if (type == SWITCH_INT_CALL)
 	{
-		if (!write32(nwbase + offsetof(tss386_t, back), tss)) return 0;
+		if (!write32(nwbase + offsetof(tss386_t, back), tss))
+			return 0;
 		nw.eflags |= F_NT;
 	}
 
@@ -276,13 +277,17 @@ int far_call(unsigned int ncs, unsigned int neip)
 
 			if (i32)
 			{
-				push32(cs.value);
-				push32(r.eip);
+				if (!push32(cs.value))
+					return 0;
+				if (!push32(r.eip))
+					return 0;
 			}
 			else
 			{
-				push16(cs.value);
-				push16(r.ip);
+				if (!push16(cs.value))
+					return 0;
+				if (!push16(r.ip))
+					return 0;
 			}
 
 			ncs = (ncs & 0xFFFC) | cpl;
@@ -311,13 +316,17 @@ int far_call(unsigned int ncs, unsigned int neip)
 
 			if (i32)
 			{
-				push32(cs.value);
-				push32(r.eip);
+				if (!push32(cs.value))
+					return 0;
+				if (!push32(r.eip))
+					return 0;
 			}
 			else
 			{
-				push16(cs.value);
-				push16(r.ip);
+				if (!push16(cs.value))
+					return 0;
+				if (!push16(r.ip))
+					return 0;
 			}
 
 			ncs = (ncs & 0xFFFC) | cpl;

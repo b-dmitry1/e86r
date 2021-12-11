@@ -1,6 +1,8 @@
 #ifndef IOPORTS_H
 #define IOPORTS_H
 
+#include "stdafx.h"
+
 class SmallBuffer
 {
 private:

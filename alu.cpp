@@ -108,11 +108,11 @@ unsigned char add8(unsigned char a, unsigned char b, unsigned char c)
 	unsigned short res = a + b + c;
 	setpsz8((unsigned char)res);
 	r.flags &= ~(F_C | F_O | F_A);
-	if ((res ^ a) & (res ^ b) & 0x80)
+	if (!((a ^ b) & 0x80) && ((a ^ res) & 0x80))
 		r.flags |= F_O;
 	if (res & 0xFF00)
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) + (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return (unsigned char)res;
 }
@@ -122,28 +122,26 @@ unsigned short add16(unsigned short a, unsigned short b, unsigned short c)
 	unsigned int res = a + b + c;
 	setpsz16(res);
 	r.flags &= ~(F_C | F_O | F_A);
-	if ((res ^ a) & (res ^ b) & 0x8000)
+	if (!((a ^ b) & 0x8000) && ((a ^ res) & 0x8000))
 		r.flags |= F_O;
 	if (res & 0xFFFF0000u)
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) + (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return res;
 }
 
 unsigned int add32(unsigned int a, unsigned int b, unsigned int c)
 {
-	long long res64;
 	unsigned int res;
-	res64 = (long long)a + b + c;
 	res = a + b + c;
 	setpsz32(res);
 	r.flags &= ~(F_C | F_O | F_A);
-	if ((res ^ a) & (res ^ b) & 0x80000000u)
+	if (!((a ^ b) & 0x80000000u) && ((a ^ res) & 0x80000000u))
 		r.flags |= F_O;
-	if (res64 > 0xFFFFFFFFll)
+	if ((a > res) || ((a == res) && c)) // (res < a)
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) + (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return res;
 }
@@ -151,47 +149,47 @@ unsigned int add32(unsigned int a, unsigned int b, unsigned int c)
 unsigned char sub8(unsigned char a, unsigned char b, unsigned char c)
 {
 	unsigned short res;
-	b += c;
-	res = (unsigned short)a - (unsigned short)b;
+	// b += c;
+	res = (unsigned short)a - (unsigned short)(b + c);
 	setpsz8((unsigned char)res);
 	r.flags &= ~(F_C | F_O | F_A);
 	if ((res ^ a) & (a ^ b) & 0x80)
 		r.flags |= F_O;
-	if (res & 0xFF00)
+	if (res & 0x100)
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) - (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return (unsigned char)res;
 }
 
 unsigned short sub16(unsigned short a, unsigned short b, unsigned short c)
 {
-	b += c;
+	// b += c;
 	unsigned int res;
-	res = (unsigned int)a - (unsigned int)b;
+	res = (unsigned int)a - (unsigned int)(b + c);
 	setpsz16((unsigned short)res);
 	r.flags &= ~(F_C | F_O | F_A);
 	if ((res ^ a) & (a ^ b) & 0x8000u)
 		r.flags |= F_O;
-	if (res & 0xFFFF0000u)
+	if (res & 0x10000)
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) - (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return res;
 }
 
 unsigned int sub32(unsigned int a, unsigned int b, unsigned int c)
 {
-	b += c;
+	// b += c;
 	unsigned int res;
-	res = (unsigned int)a - (unsigned int)b;
+	res = (unsigned int)a - (unsigned int)(b + c);
 	setpsz32(res);
 	r.flags &= ~(F_C | F_O | F_A);
 	if ((res ^ a) & (a ^ b) & 0x80000000u)
 		r.flags |= F_O;
-	if (a < b)
+	if ((a < res) || ((a == res) && c))
 		r.flags |= F_C;
-	if ((res ^ a ^ b) & 0x10)
+	if (((a & 0xF) - (b & 0xF)) & 0x10) // ((res ^ a ^ b) & 0x10)
 		r.flags |= F_A;
 	return res;
 }
@@ -574,6 +572,11 @@ int div32(unsigned long long a, unsigned long long b, unsigned int *q, unsigned 
 unsigned short dshl16(unsigned short a, unsigned short b, unsigned short n)
 {
 	unsigned short v;
+	if (n > 16 && 0)
+	{
+		a = b;
+		n -= 16;
+	}
 	n &= 15;
 	v = (a << n) | (b >> (16 - n));
 	if ((a << (n - 1)) & 0x8000u)
@@ -600,6 +603,11 @@ unsigned int dshl32(unsigned int a, unsigned int b, unsigned int n)
 unsigned short dshr16(unsigned short a, unsigned short b, unsigned short n)
 {
 	unsigned short v;
+	if (n > 16 && 0)
+	{
+		a = b;
+		n -= 16;
+	}
 	n &= 15;
 	v = (a >> n) | (b << (16 - n));
 	if ((a >> (n - 1)) & 1)
@@ -692,6 +700,7 @@ unsigned char rcr8(unsigned char v, unsigned char n)
 
 unsigned char shl8(unsigned char v, unsigned char n)
 {
+	/*
 	int i;
 
 	for (i = 0; i < n; i++)
@@ -711,6 +720,7 @@ unsigned char shl8(unsigned char v, unsigned char n)
 			r.flags |= F_O;
 
 	return v;
+	*/
 
 	if ((v << (n - 1)) & 0x80)
 		r.flags |= F_C;
@@ -719,13 +729,14 @@ unsigned char shl8(unsigned char v, unsigned char n)
 	v = v << n;
 	setpsz8(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x80)
+	if (((v << n) ^ (v << (n - 1))) & 0x80) //((v ^ (v << 1)) & 0x80)
 		r.flags |= F_O;
 	return v;
 }
 
 unsigned short shl16(unsigned short v, unsigned char n)
 {
+	/*
 	int i;
 
 	for (i = 0; i < n; i++)
@@ -745,7 +756,7 @@ unsigned short shl16(unsigned short v, unsigned char n)
 			r.flags |= F_O;
 
 	return v;
-
+	*/
 	if ((v << (n - 1)) & 0x8000)
 		r.flags |= F_C;
 	else
@@ -753,13 +764,14 @@ unsigned short shl16(unsigned short v, unsigned char n)
 	v = v << n;
 	setpsz16(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x8000)
+	if (((v << n) ^ (v << (n - 1))) & 0x8000) //((v ^ (v << 1)) & 0x8000)
 		r.flags |= F_O;
 	return v;
 }
 
 unsigned int shl32(unsigned int v, unsigned char n)
 {
+	/*
 	int i;
 
 	for (i = 0; i < n; i++)
@@ -779,6 +791,7 @@ unsigned int shl32(unsigned int v, unsigned char n)
 			r.flags |= F_O;
 
 	return v;
+	*/
 
 	if ((v << (n - 1)) & 0x80000000u)
 		r.flags |= F_C;
@@ -787,7 +800,7 @@ unsigned int shl32(unsigned int v, unsigned char n)
 	v = v << n;
 	setpsz32(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x80000000u)
+	if (((v << n) ^ (v << (n - 1))) & 0x80000000u) //((v ^ (v << 1)) & 0x80000000u)
 		r.flags |= F_O;
 	return v;
 }
@@ -939,7 +952,7 @@ unsigned char shr8(unsigned char v, unsigned char n)
 	v = v >> n;
 	setpsz8(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x80)
+	if (v & 0x80)//((v ^ (v << 1)) & 0x80)
 		r.flags |= F_O;
 	return v;
 }
@@ -953,7 +966,7 @@ unsigned short shr16(unsigned short v, unsigned char n)
 	v = v >> n;
 	setpsz16(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x8000)
+	if (v & 0x8000)//((v ^ (v << 1)) & 0x8000)
 		r.flags |= F_O;
 	return v;
 }
@@ -967,7 +980,7 @@ unsigned int shr32(unsigned int v, unsigned char n)
 	v = v >> n;
 	setpsz32(v);
 	r.flags &= ~F_O;
-	if ((v ^ (v << 1)) & 0x80000000u)
+	if (v & 0x80000000u)//((v ^ (v << 1)) & 0x80000000u)
 		r.flags |= F_O;
 	return v;
 }
@@ -1068,13 +1081,13 @@ unsigned int bswap32(unsigned int v)
 	return v;
 }
 
-void bts16(int n)
+void bts16(short n)
 {
 	unsigned int v, c, mask;
 	mask = (unsigned int)(1u << (n & 15u));
 	n /= 16;
 	n *= 2;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1087,13 +1100,13 @@ void bts16(int n)
 		r.eflags &= ~F_C;
 }
 
-void btr16(int n)
+void btr16(short n)
 {
 	unsigned int v, c, mask;
 	mask = (unsigned int)(1u << (n & 15u));
 	n /= 16;
 	n *= 2;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1106,13 +1119,13 @@ void btr16(int n)
 		r.eflags &= ~F_C;
 }
 
-void btc16(int n)
+void btc16(short n)
 {
 	unsigned int v, c, mask;
 	mask = (unsigned int)(1u << (n & 15u));
 	n /= 16;
 	n *= 2;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1125,13 +1138,13 @@ void btc16(int n)
 		r.eflags &= ~F_C;
 }
 
-void bt16(int n)
+void bt16(short n)
 {
 	unsigned int v, c, mask;
 	mask = (unsigned int)(1u << (n & 15u));
 	n /= 16;
 	n *= 2;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1147,7 +1160,7 @@ void bts32(int n)
 	mask = (unsigned int)(1u << (n & 31u));
 	n /= 32;
 	n *= 4;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1166,7 +1179,7 @@ void btr32(int n)
 	mask = (unsigned int)(1u << (n & 31u));
 	n /= 32;
 	n *= 4;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1185,7 +1198,7 @@ void btc32(int n)
 	mask = (unsigned int)(1u << (n & 31u));
 	n /= 32;
 	n *= 4;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;
@@ -1204,7 +1217,7 @@ void bt32(int n)
 	mask = (unsigned int)(1u << (n & 31u));
 	n /= 32;
 	n *= 4;
-	ofs += (unsigned int)n;
+	ofs += ( int)n;
 	if (!readmod(&v))
 		return;
 	c = v & mask ? 1 : 0;

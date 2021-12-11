@@ -85,6 +85,7 @@ int mod(int byte)
 	return fetchmodrm();
 }
 
+#if (PC)
 int disasm_modrm()
 {
 	switch (modrm & 0xC0)
@@ -362,6 +363,7 @@ void disasm_modsreg()
 		case 0x38: D("?"); break;
 	}
 }
+#endif
 
 unsigned int readmodreg()
 {
