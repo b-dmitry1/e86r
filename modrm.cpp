@@ -85,9 +85,9 @@ int mod(int byte)
 	return fetchmodrm();
 }
 
-#if (PC)
 int disasm_modrm()
 {
+#if (PC)
 	switch (modrm & 0xC0)
 	{
 		case 0:
@@ -148,11 +148,13 @@ int disasm_modrm()
 			}
 			break;
 	}
+#endif
 	return 1;
 }
 
 void disasm_sib_ea()
 {
+#if (PC)
 	if (DEBUG && dasm != NULL)
 	{
 		D("%s:[", sel->name);
@@ -215,10 +217,12 @@ void disasm_sib_ea()
 			}
 		}
 	}
+#endif
 }
 
 int disasm_modrm32()
 {
+#if (PC)
 	switch (modrm & 0xC0)
 	{
 		case 0:
@@ -288,7 +292,7 @@ int disasm_modrm32()
 			}
 			break;
 	}
-
+#endif
 	return 1;
 }
 
@@ -302,6 +306,7 @@ void disasm_mod()
 
 void disasm_modreg()
 {
+#if (PC)
 	if (modrm_byte)
 	{
 		switch (modrm & 0x38)
@@ -347,6 +352,7 @@ void disasm_modreg()
 			}
 		}
 	}
+#endif
 }
 
 void disasm_modsreg()
@@ -363,7 +369,6 @@ void disasm_modsreg()
 		case 0x38: D("?"); break;
 	}
 }
-#endif
 
 unsigned int readmodreg()
 {

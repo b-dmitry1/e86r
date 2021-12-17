@@ -7,9 +7,7 @@
 #include "pic_pit.h"
 #include "config.h"
 
-unsigned char ram[RAM_SIZE];
-
-extern unsigned char ports[65536];
+extern unsigned char ports[1024];
 
 regs_t r;
 selector_t *sel;
@@ -120,6 +118,7 @@ void set_flags16(unsigned short value, unsigned int mask)
 
 void dump(unsigned int addr)
 {
+#if (PC)
 	int i, j;
 	unsigned int *p;
 	for (i = 0; i < 128; i += 16)
@@ -130,10 +129,12 @@ void dump(unsigned int addr)
 			fprintf(c0, "%.8X ", p[j]);
 	}
 	fprintf(c0, "\n");
+#endif
 }
 
 void dump_descr(unsigned short sel)
 {
+#if (PC)
 	descr_t d;
 	gate_t g;
 
@@ -201,6 +202,7 @@ void dump_descr(unsigned short sel)
 		}
 	}
 	fprintf(c0, "\n");
+#endif
 }
 
 void reset()
@@ -240,8 +242,6 @@ void reset()
 	fs.name = "fs";
 	gs.name = "gs";
 	
-	// cr[0] |= CR0_EM;
-
 	r.eip = 0;
 #if (CPU < 286)
 	set_flags(0xF002, 0xFFFFFFFFu);
@@ -273,13 +273,23 @@ int instr_count[512] = {0};
 
 int open_log = 0;
 
+void check_irqs()
+{
+	int nextint;
+
+	if (r.eflags & F_I)
+	{
+		nextint = get_next_irq_vector();
+		if (nextint > 0)
+		{
+			interrupt(nextint, -1, 0);
+			return;
+		}
+	}
+}
+
 void step()
 {
-	static int nextint = 0;
-	static int waitint = 0;
-	static int wait_iret = 0;
-
-
 	if (hlt && (irqs == 0))
 		return;
 	hlt = 0;
@@ -288,6 +298,16 @@ void step()
 
 	i32 = cs.big;
 	a32 = cs.big;
+
+	if (!cs.big)
+	{
+		r.iph = 0;
+	}
+
+	if (!ss.big)
+	{
+		r.sph = 0;
+	}
 
 	a32mask = cs.big ? 0xFFFFFFFFu : 0xFFFFu;
 
@@ -301,25 +321,12 @@ void step()
 		// open_log = 1;
 		return;
 	}
-	else
-	{
-		if ((r.eflags & F_I) && (!wait_iret))
-		{
-			nextint = get_next_irq_vector();
-			if (nextint > 0)
-			{
-				interrupt(nextint, -1, 0);
-				wait_iret = 1;
-				return;
-			}
-		}
 
-		instr_cs = cs;
-		instr_eip = r.eip;
-		instr_ss = ss;
-		instr_esp = r.esp;
-		instr_fl = r.eflags;
-	}
+	instr_cs = cs;
+	instr_eip = r.eip;
+	instr_ss = ss;
+	instr_esp = r.esp;
+	instr_fl = r.eflags;
 
 #if (PC)
 	if ((dasm == NULL) && (open_log))
@@ -337,30 +344,24 @@ void step()
 
 	D("%.2X  ", opcode);
 
-	if (opcode == 0xCF)
-		wait_iret = 0;
-
 	instrs[opcode]();
 
 	cyc++;
 
 	D("\n");
 
-	if (DEBUG && (dasm != NULL) && PC)
-	{
-		D("  ax: %.8X\n", r.eax);
-		D("  bx: %.8X\n", r.ebx);
-		D("  cx: %.8X\n", r.ecx);
-		D("  dx: %.8X\n", r.edx);
-		D("  sp: %.8X\n", r.esp);
-		D("  bp: %.8X\n", r.ebp);
-		D("  si: %.8X\n", r.esi);
-		D("  di: %.8X\n", r.edi);
-		D("  ip: %.8X\n", r.eip);
-		D("  fl: %.8X\n", r.eflags);
-		D("  ds: %.4x\n", ds.value);
-		D("  cr0: %.8x\n", cr[0]);
-	}
+	D("  ax: %.8X\n", r.eax);
+	D("  bx: %.8X\n", r.ebx);
+	D("  cx: %.8X\n", r.ecx);
+	D("  dx: %.8X\n", r.edx);
+	D("  sp: %.8X\n", r.esp);
+	D("  bp: %.8X\n", r.ebp);
+	D("  si: %.8X\n", r.esi);
+	D("  di: %.8X\n", r.edi);
+	D("  ip: %.8X\n", r.eip);
+	D("  fl: %.8X\n", r.eflags);
+	D("  ds: %.4x\n", ds.value);
+	D("  cr0: %.8x\n", cr[0]);
 }
 
 #if (PC)

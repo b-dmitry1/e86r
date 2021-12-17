@@ -4,6 +4,10 @@
 #include "memdescr.h"
 #include "interrupts.h"
 
+#ifndef offsetof
+#define offsetof(s,m)   (size_t)&reinterpret_cast<const volatile char&>((((s *)0)->m))
+#endif
+
 int switch_task(unsigned int newtss, int type)
 {
 	descr_t tsd, ldtd;

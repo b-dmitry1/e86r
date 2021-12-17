@@ -9,7 +9,7 @@
 #include "cmos.h"
 #include "keybmouse.h"
 
-unsigned char ports[65536];
+unsigned char ports[1024];
 
 unsigned char portread8(unsigned short port)
 {
@@ -22,6 +22,11 @@ unsigned char portread8(unsigned short port)
 	// IDE HDD
 	if (((port >= 0x1F0) && (port <= 0x1F7)) || ((port >= 0x3F0) && (port <= 0x3F7)))
 		return ide_read(port);
+
+	if (port >= 1024)
+	{
+		return 0;
+	}
 
 	switch (port)
 	{
@@ -96,6 +101,12 @@ void portwrite8(unsigned short port, unsigned char v)
 		ide_write(port, v);
 		return;
 	}
+
+	if (port >= 1024)
+	{
+		return;
+	}
+
 	ports[port] = v;
 	switch (port)
 	{

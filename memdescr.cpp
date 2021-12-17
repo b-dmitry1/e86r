@@ -57,14 +57,14 @@ int get_phys_addr(unsigned int addr, unsigned int *phys)
 			ex1(EX_PAGE, (user ? 4 : 0));
 			return 0;
 		}
-		
+		/*
 		if ((!(e & 4)) && user)
 		{
 			cr[2] = addr;
 			ex1(EX_PAGE, 1 + 4);
 			return 0;
 		}
-		
+		*/
 		unsigned int *page = (unsigned int *)&ram[e & 0xFFFFF000u];
 		unsigned int pe = page[(addr >> 12u) & 0x3FF];
 		if (!(pe & 1))
@@ -73,14 +73,15 @@ int get_phys_addr(unsigned int addr, unsigned int *phys)
 			ex1(EX_PAGE, (user ? 4 : 0));
 			return 0;
 		}
-		
+		/*
 		if ((!(pe & 4)) && user)
 		{
 			cr[2] = addr;
 			ex1(EX_PAGE, 1 + 4);
 			return 0;
 		}
-		
+		*/
+
 		*phys = (pe & 0xFFFFF000u) | (addr & 0xFFFu);
 		dir[addr >> 22u] |= 32; // accessed
 		page[(addr >> 12u) & 0x3FF] |= 32;
@@ -113,14 +114,14 @@ int get_phys_addr_write(unsigned int addr, unsigned int *phys)
 				return 0;
 			}
 		}
-		
+		/*
 		if ((!(e & 4)) && user)
 		{
 			cr[2] = addr;
 			ex1(EX_PAGE, 1 + 2 + 4);
 			return 0;
 		}
-		
+		*/
 		unsigned int *page = (unsigned int *)&ram[e & 0xFFFFF000u];
 		unsigned int pe = page[(addr >> 12u) & 0x3FF];
 		if (!(pe & 1))
@@ -140,14 +141,15 @@ int get_phys_addr_write(unsigned int addr, unsigned int *phys)
 			}
 		}
 		
-		
+		/*
 		if ((!(pe & 4)) && user)
 		{
 			cr[2] = addr;
 			ex(EX_PAGE, 1 + 2 + 4);
 			return 0;
 		}
-		
+		*/
+
 		*phys = (pe & 0xFFFFF000u) | (addr & 0xFFFu);
 		dir[addr >> 22u] |= 32; // accessed
 		page[(addr >> 12u) & 0x3FF] |= 32 | 64; // and dirty
@@ -534,6 +536,8 @@ int write32fast(unsigned int addr, unsigned int v)
 
 int write8(unsigned int addr, unsigned char v)
 {
+	if (DEBUGMEM)
+		D("\nWR 0x%.4X: %.2X", addr, v);
 	if (!paging && 0)
 	{
 		if ((addr & 0xFFFF0000) == 0xA0000)
@@ -673,10 +677,6 @@ int read32(selector_t *s, unsigned int addr, unsigned int *v)
 
 int write8(selector_t *s, unsigned int addr, unsigned char v)
 {
-	if (!a32)
-		;//addr &= 0xFFFFu;
-	if (!s->big)
-		;//addr &= 0xFFFFu;
 	if (!s->present)
 	{
 		if (pmode)

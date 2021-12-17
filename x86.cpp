@@ -167,7 +167,7 @@ void lmsw(unsigned int v)
 	v &= 0x0F;
 	v |= cr[0] & 0xFFFFFFF1;
 	cr[0] = v;
-#if (FPU == 1)
+#if (ENABLE_FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);

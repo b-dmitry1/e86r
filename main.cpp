@@ -18,11 +18,60 @@ int ncycles = 2000;
 extern int cyc;
 unsigned long cyctime = 0;
 
+unsigned char sys_ram[RAM_SIZE];
+unsigned char *ram = sys_ram;
+
+// Frame buffer for render_screen
 unsigned int scr[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+// Video RAM. Should be at least 512KB for 640x480x256 mode
+unsigned int video_ram[1024 * 1024];
+unsigned int *vram = video_ram;
+
+FILE *fdd[NUM_FDD] = {NULL};
+FILE *hdd[NUM_HDD] = {NULL};
+
+COLORREF hw_palette[256] = {0};
+
+// Hardware set palette function. Not used on PC
+void hw_set_palette(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
+{
+	hw_palette[index] = RGB(b, g, r);
+}
+
+void hw_read_floppy(int disk, unsigned char *buffer, unsigned int lba, unsigned int count)
+{
+	if ((disk < 0) || (disk >= NUM_FDD))
+		return;
+	fseek(fdd[disk], lba * 512, SEEK_SET);
+	fread(buffer, 512, count, fdd[disk]);
+}
+
+void hw_write_floppy(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count)
+{
+	
+}
+
+void hw_read_hdd(int disk, unsigned char *buffer, unsigned int lba, unsigned int count)
+{
+	if ((disk < 0) || (disk >= NUM_HDD))
+		return;
+	fseek(hdd[disk], lba * 512, SEEK_SET);
+	fread(buffer, 512, count, hdd[disk]);
+}
+
+void hw_write_hdd(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count)
+{
+	if ((disk < 0) || (disk >= NUM_HDD))
+		return;
+	fseek(hdd[disk], lba * 512, SEEK_SET);
+	fwrite(buffer, 512, count, hdd[disk]);
+}
 
 void set_pixel_2x2(int x, int y, unsigned int color)
 {
 	unsigned int *v;
+	color = hw_palette[color & 0xFF];
 	y = SCREEN_HEIGHT / 2 - y - 1;
 	v = &scr[x * 2 + y * 2 * SCREEN_WIDTH];
 	v[0] = color;
@@ -34,6 +83,7 @@ void set_pixel_2x2(int x, int y, unsigned int color)
 void set_pixel_2x1(int x, int y, unsigned int color)
 {
 	unsigned int *v;
+	color = hw_palette[color & 0xFF];
 	y = SCREEN_HEIGHT - y - 1;
 	v = &scr[x * 2 + y * SCREEN_WIDTH];
 	v[0] = color;
@@ -43,6 +93,7 @@ void set_pixel_2x1(int x, int y, unsigned int color)
 void set_pixel_1x2(int x, int y, unsigned int color)
 {
 	unsigned int *v;
+	color = hw_palette[color & 0xFF];
 	y = SCREEN_HEIGHT / 2 - y - 1;
 	v = &scr[x + y * 2 * SCREEN_WIDTH];
 	v[0] = color;
@@ -52,6 +103,7 @@ void set_pixel_1x2(int x, int y, unsigned int color)
 void set_pixel(int x, int y, unsigned int color)
 {
 	unsigned int *v;
+	color = hw_palette[color & 0xFF];
 	y = SCREEN_HEIGHT - y - 1;
 	v = &scr[x + y * SCREEN_WIDTH];
 	v[0] = color;
@@ -118,19 +170,36 @@ void loop()
 	// Debug output
 	fopen_s(&c0, DEBUG_FILE_NAME, "wt");
 
+	// fopen_s(&dasm, "386.dasm", "wt");
+
 	// Reset the CPU
 	reset();
 
 	// Disk setup
 	disk_init();
 
-	disk_set_fdd(0, "i:\\linuxfd.img", 80, 2, 18);
+	fdd[0] = fopen("i:\\linuxfd.img", "rb+");
+	disk_set_fdd(0, 80, 2, 18);
 
-	disk_set_hdd(0, "c:\\hd500-3.img", 1023, 16, 63);
-	// disk_set_hdd(0, "c:\\hd10meg.img", 306, 4, 17);
+	
+	hdd[0] = fopen("c:\\hd500-3.img", "rb+");
+	disk_set_hdd(0, 1023, 16, 63);
+	
+	
+	/*
+	hdd[0] = fopen("c:\\hd10meg.img", "rb+");
+	disk_set_hdd(0, 306, 4, 17);
 
-	// disk_set_hdd(0, "c:\\hd_oldlinux.img", 1023, 4, 20);
-	// disk_set_hdd(1, "c:\\hd_oldlinux.img", 1023, 4, 20);
+	hdd[1] = fopen("c:\\hd10meg.img", "rb+");
+	disk_set_hdd(1, 306, 4, 17);
+	*/
+
+	/*
+	hdd[0] = fopen("c:\\hd_oldlinux.img", "rb+");
+	disk_set_hdd(0, 1023, 4, 20);
+	hdd[1] = fopen("c:\\hd_oldlinux.img", "rb+");
+	disk_set_hdd(1, 1023, 4, 20);
+	*/
 
 	// Main emulator loop
 	while (!terminated)
@@ -159,6 +228,8 @@ void loop()
 			step();
 			step();
 
+			check_irqs();
+
 			ports[0x3da] ^= 1;
 
 			pit_step();
@@ -181,6 +252,22 @@ void loop()
 	}
 
 	disk_deinit();
+
+	for (i = 0; i < NUM_FDD; i++)
+	{
+		if (fdd[i] != NULL)
+		{
+			fclose(fdd[i]);
+		}
+	}
+
+	for (i = 0; i < NUM_HDD; i++)
+	{
+		if (hdd[i] != NULL)
+		{
+			fclose(hdd[i]);
+		}
+	}
 
 	if (c0 != NULL)
 		fclose(c0);

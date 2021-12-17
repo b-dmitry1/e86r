@@ -115,7 +115,7 @@ void f_01()
 		case 4:
 			D("smsw ");
 			disasm_mod();
-#if (FPU == 1)
+#if (ENABLE_FPU == 1)
 			cr[0] |= CR0_MP | CR0_ET;
 #else
 			cr[0] &= ~(CR0_MP | CR0_ET);
@@ -307,7 +307,7 @@ void f_20()
 	disasm_mod();
 	D(", cr%d", (modrm >> 3) & 7);
 	i32 = 1;
-#if (FPU == 1)
+#if (ENABLE_FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);
@@ -333,7 +333,7 @@ void f_22()
 	disasm_mod();
 	i32 = 1;
 	readmod(&cr[(modrm >> 3) & 3]);
-#if (FPU == 1)
+#if (ENABLE_FPU == 1)
 	cr[0] |= CR0_MP | CR0_ET;
 #else
 	cr[0] &= ~(CR0_MP | CR0_ET);

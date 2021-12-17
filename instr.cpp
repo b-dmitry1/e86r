@@ -2351,7 +2351,7 @@ void i_80()
 		return;
 	if (!fetch8(&b))
 		return;
-	if (DEBUG && (dasm != NULL) && PC)
+	if (DEBUG && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2490,7 +2490,7 @@ void i_81()
 			return;
 		s = w;
 	}
-	if (DEBUG && (dasm != NULL) && PC)
+	if (DEBUG && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2619,7 +2619,7 @@ void i_83()
 	s = b;
 	if (s & 0x80)
 		s |= 0xFFFFFF00u;
-	if (DEBUG && (dasm != NULL) && PC)
+	if (DEBUG && PC)
 	{
 		switch ((modrm >> 3) & 7)
 		{
@@ -2907,6 +2907,7 @@ void i_8F()
 		return;
 	}
 	disasm_mod();
+
 	if (!writemod(s))
 	{
 		r.esp = esp;
@@ -3930,6 +3931,75 @@ void i_BF()
 	}
 }
 
+void i_C0_0(unsigned char v, unsigned char count)
+{
+	D("rol ");
+	disasm_mod();
+	v = rol8(v, count);
+	writemod(v);
+}
+
+void i_C0_1(unsigned char v, unsigned char count)
+{
+	D("ror ");
+	disasm_mod();
+	v = ror8(v, count);
+	writemod(v);
+}
+
+void i_C0_2(unsigned char v, unsigned char count)
+{
+	D("rcl ");
+	disasm_mod();
+	v = rcl8(v, count);
+	writemod(v);
+}
+
+void i_C0_3(unsigned char v, unsigned char count)
+{
+	D("rcr ");
+	disasm_mod();
+	v = rcr8(v, count);
+	writemod(v);
+}
+
+void i_C0_4(unsigned char v, unsigned char count)
+{
+	D("shl ");
+	disasm_mod();
+	v = shl8(v, count);
+	writemod(v);
+}
+
+void i_C0_5(unsigned char v, unsigned char count)
+{
+	D("shr ");
+	disasm_mod();
+	v = shr8(v, count);
+	writemod(v);
+}
+
+void i_C0_6(unsigned char v, unsigned char count)
+{
+	D("sal ");
+	disasm_mod();
+	v = shl8(v, count);
+	writemod(v);
+}
+
+void i_C0_7(unsigned char v, unsigned char count)
+{
+	D("sar ");
+	disasm_mod();
+	v = sar8(v, count);
+	writemod(v);
+}
+
+void (*i_C0_func[8])(unsigned char, unsigned char) =
+{
+	i_C0_0, i_C0_1, i_C0_2, i_C0_3, i_C0_4, i_C0_5, i_C0_6, i_C0_7
+};
+
 void i_C0()
 {
 	int count;
@@ -3943,67 +4013,147 @@ void i_C0()
 	if (!readmod(&d))
 		return;
 	v = (unsigned char)d;
-	switch ((modrm >> 3) & 0x07)
-	{
-		case 0:
-			// rol
-			D("rol ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = rol8(v, count);
-			break;
-		case 1:
-			// ror
-			D("ror ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = ror8(v, count);
-			break;
-		case 2:
-			// rcl
-			D("rcl ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = rcl8(v, count);
-			break;
-		case 3:
-			// rcr
-			D("rcr ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = rcr8(v, count);
-			break;
-		case 4:
-			// shl
-			D("shl ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = shl8(v, count);
-			break;
-		case 5:
-			// shr
-			D("shr ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = shr8(v, count);
-			break;
-		case 6:
-			// sal
-			D("sal ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = shl8(v, count);
-			break;
-		case 7:
-			// sar
-			D("sar ");
-			disasm_mod();
-			D(", 0x%x", count);
-			v = sar8(v, count);
-			break;
-	}
+	i_C0_func[(modrm >> 3) & 0x07](v, count);
+	D(", %d", count);
+}
+
+void i_C1_0w(unsigned int v, unsigned char count)
+{
+	D("rol ");
+	disasm_mod();
+	v = rol16(v, count);
 	writemod(v);
 }
+
+void i_C1_0d(unsigned int v, unsigned char count)
+{
+	D("rol ");
+	disasm_mod();
+	v = rol32(v, count);
+	writemod(v);
+}
+
+void i_C1_1w(unsigned int v, unsigned char count)
+{
+	D("ror ");
+	disasm_mod();
+	v = ror16(v, count);
+	writemod(v);
+}
+
+void i_C1_1d(unsigned int v, unsigned char count)
+{
+	D("ror ");
+	disasm_mod();
+	v = ror32(v, count);
+	writemod(v);
+}
+
+void i_C1_2w(unsigned int v, unsigned char count)
+{
+	D("rcl ");
+	disasm_mod();
+	v = rcl16(v, count);
+	writemod(v);
+}
+
+void i_C1_2d(unsigned int v, unsigned char count)
+{
+	D("rcl ");
+	disasm_mod();
+	v = rcl32(v, count);
+	writemod(v);
+}
+
+void i_C1_3w(unsigned int v, unsigned char count)
+{
+	D("rcr ");
+	disasm_mod();
+	v = rcr16(v, count);
+	writemod(v);
+}
+
+void i_C1_3d(unsigned int v, unsigned char count)
+{
+	D("rcr ");
+	disasm_mod();
+	v = rcr32(v, count);
+	writemod(v);
+}
+
+void i_C1_4w(unsigned int v, unsigned char count)
+{
+	D("shl ");
+	disasm_mod();
+	v = shl16(v, count);
+	writemod(v);
+}
+
+void i_C1_4d(unsigned int v, unsigned char count)
+{
+	D("shl ");
+	disasm_mod();
+	v = shl32(v, count);
+	writemod(v);
+}
+
+void i_C1_5w(unsigned int v, unsigned char count)
+{
+	D("shr ");
+	disasm_mod();
+	v = shr16(v, count);
+	writemod(v);
+}
+
+void i_C1_5d(unsigned int v, unsigned char count)
+{
+	D("shr ");
+	disasm_mod();
+	v = shr32(v, count);
+	writemod(v);
+}
+
+void i_C1_6w(unsigned int v, unsigned char count)
+{
+	D("sal ");
+	disasm_mod();
+	v = shl16(v, count);
+	writemod(v);
+}
+
+void i_C1_6d(unsigned int v, unsigned char count)
+{
+	D("sal ");
+	disasm_mod();
+	v = shl32(v, count);
+	writemod(v);
+}
+
+void i_C1_7w(unsigned int v, unsigned char count)
+{
+	D("sar ");
+	disasm_mod();
+	v = sar16(v, count);
+	writemod(v);
+}
+
+void i_C1_7d(unsigned int v, unsigned char count)
+{
+	D("sar ");
+	disasm_mod();
+	v = sar32(v, count);
+	writemod(v);
+}
+
+void (*i_C1_funcw[8])(unsigned int, unsigned char) =
+{
+	i_C1_0w, i_C1_1w, i_C1_2w, i_C1_3w, i_C1_4w, i_C1_5w, i_C1_6w, i_C1_7w
+};
+
+void (*i_C1_funcd[8])(unsigned int, unsigned char) =
+{
+	i_C1_0d, i_C1_1d, i_C1_2d, i_C1_3d, i_C1_4d, i_C1_5d, i_C1_6d, i_C1_7d
+};
 
 void i_C1()
 {
@@ -4020,129 +4170,13 @@ void i_C1()
 
 	if (i32)
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", %d", count);
-				v = rol32(v, count);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = ror32(v, count);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = rcl32(v, count);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = rcr32(v, count);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shl32(v, count);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shr32(v, count);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shl32(v, count);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = sar32(v, count);
-				break;
-		}
+		i_C1_funcd[(modrm >> 3) & 0x07](v, count);
 	}
 	else
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = rol16(v, count);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = ror16(v, count);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = rcl16(v, count);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = rcr16(v, count);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shl16(v, count);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shr16(v, count);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = shl16(v, count);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", 0x%x", count);
-				v = sar16(v, count);
-				break;
-		}
+		i_C1_funcw[(modrm >> 3) & 0x07](v, count);
 	}
-	writemod(v);
+	D(", %d", count);
 }
 
 void i_C2()
@@ -4499,66 +4533,8 @@ void i_D0()
 	if (!readmod(&d))
 		return;
 	v = (unsigned char)d;
-	switch ((modrm >> 3) & 0x07)
-	{
-		case 0:
-			// rol
-			D("rol ");
-			disasm_mod();
-			D(", 0x1");
-			v = rol8(v, 1);
-			break;
-		case 1:
-			// ror
-			D("ror ");
-			disasm_mod();
-			D(", 0x1");
-			v = ror8(v, 1);
-			break;
-		case 2:
-			// rcl
-			D("rcl ");
-			disasm_mod();
-			D(", 0x1");
-			v = rcl8(v, 1);
-			break;
-		case 3:
-			// rcr
-			D("rcr ");
-			disasm_mod();
-			D(", 0x1");
-			v = rcr8(v, 1);
-			break;
-		case 4:
-			// shl
-			D("shl ");
-			disasm_mod();
-			D(", 0x1");
-			v = shl8(v, 1);
-			break;
-		case 5:
-			// shr
-			D("shr ");
-			disasm_mod();
-			D(", 0x1");
-			v = shr8(v, 1);
-			break;
-		case 6:
-			// sal
-			D("sal ");
-			disasm_mod();
-			D(", 0x1");
-			v = shl8(v, 1);
-			break;
-		case 7:
-			// sar
-			D("sar ");
-			disasm_mod();
-			D(", 0x1");
-			v = sar8(v, 1);
-			break;
-	}
-	writemod(v);
+	i_C0_func[(modrm >> 3) & 0x07](v, 1);
+	D(", 1");
 }
 
 void i_D1()
@@ -4568,132 +4544,18 @@ void i_D1()
 		return;
 	if (!readmod(&v))
 		return;
+
 	if (i32)
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", 0x1");
-				v = rol32(v, 1);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", 0x1");
-				v = ror32(v, 1);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", 0x1");
-				v = rcl32(v, 1);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", 0x1");
-				v = rcr32(v, 1);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", 0x1");
-				v = shl32(v, 1);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", 0x1");
-				
-				v = shr32(v, 1);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", 0x1");
-				v = shl32(v, 1);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", 0x1");
-				v = sar32(v, 1);
-				break;
-		}
+		i_C1_funcd[(modrm >> 3) & 0x07](v, 1);
+		return;
 	}
 	else
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", 0x1");
-				v = rol16(v, 1);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", 0x1");
-				v = ror16(v, 1);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", 0x1");
-				v = rcl16(v, 1);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", 0x1");
-				v = rcr16(v, 1);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", 0x1");
-				v = shl16(v, 1);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", 0x1");
-				v = shr16(v, 1);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", 0x1");
-				v = shl16(v, 1);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", 0x1");
-				v = sar16(v, 1);
-				break;
-		}
+		i_C1_funcw[(modrm >> 3) & 0x07](v, 1);
+		return;
 	}
-	writemod(v);
+	D(", 1");
 }
 
 void i_D2()
@@ -4707,66 +4569,8 @@ void i_D2()
 	if (!readmod(&d))
 		return;
 	v = (unsigned char)d;
-	switch ((modrm >> 3) & 0x07)
-	{
-		case 0:
-			// rol
-			D("rol ");
-			disasm_mod();
-			D(", cl");
-			v = rol8(v, count);
-			break;
-		case 1:
-			// ror
-			D("ror ");
-			disasm_mod();
-			D(", cl");
-			v = ror8(v, count);
-			break;
-		case 2:
-			// rcl
-			D("rcl ");
-			disasm_mod();
-			D(", cl");
-			v = rcl8(v, count);
-			break;
-		case 3:
-			// rcr
-			D("rcr ");
-			disasm_mod();
-			D(", cl");
-			v = rcr8(v, count);
-			break;
-		case 4:
-			// shl
-			D("shl ");
-			disasm_mod();
-			D(", cl");
-			v = shl8(v, count);
-			break;
-		case 5:
-			// shr
-			D("shr ");
-			disasm_mod();
-			D(", cl");
-			v = shr8(v, count);
-			break;
-		case 6:
-			// sal
-			D("sal ");
-			disasm_mod();
-			D(", cl");
-			v = shl8(v, count);
-			break;
-		case 7:
-			// sar
-			D("sar ");
-			disasm_mod();
-			D(", cl");
-			v = sar8(v, count);
-			break;
-	}
-	writemod(v);
+	i_C0_func[(modrm >> 3) & 0x07](v, count);
+	D(", cl");
 }
 
 void i_D3()
@@ -4780,129 +4584,13 @@ void i_D3()
 		return;
 	if (i32)
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", cl");
-				v = rol32(v, count);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", cl");
-				v = ror32(v, count);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", cl");
-				v = rcl32(v, count);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", cl");
-				v = rcr32(v, count);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", cl");
-				v = shl32(v, count);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", cl");
-				v = shr32(v, count);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", cl");
-				v = shl32(v, count);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", cl");
-				v = sar32(v, count);
-				break;
-		}
+		i_C1_funcd[(modrm >> 3) & 0x07](v, count);
 	}
 	else
 	{
-		switch ((modrm >> 3) & 0x07)
-		{
-			case 0:
-				// rol
-				D("rol ");
-				disasm_mod();
-				D(", cl");
-				v = rol16(v, count);
-				break;
-			case 1:
-				// ror
-				D("ror ");
-				disasm_mod();
-				D(", cl");
-				v = ror16(v, count);
-				break;
-			case 2:
-				// rcl
-				D("rcl ");
-				disasm_mod();
-				D(", cl");
-				v = rcl16(v, count);
-				break;
-			case 3:
-				// rcr
-				D("rcr ");
-				disasm_mod();
-				D(", cl");
-				v = rcr16(v, count);
-				break;
-			case 4:
-				// shl
-				D("shl ");
-				disasm_mod();
-				D(", cl");
-				v = shl16(v, count);
-				break;
-			case 5:
-				// shr
-				D("shr ");
-				disasm_mod();
-				D(", cl");
-				v = shr16(v, count);
-				break;
-			case 6:
-				// sal
-				D("sal ");
-				disasm_mod();
-				D(", cl");
-				v = shl16(v, count);
-				break;
-			case 7:
-				// sar
-				D("sar ");
-				disasm_mod();
-				D(", cl");
-				v = sar16(v, count);
-				break;
-		}
+		i_C1_funcw[(modrm >> 3) & 0x07](v, count);
 	}
-	writemod(v);
+	D(", cl");
 }
 
 void i_D4()
@@ -4940,7 +4628,7 @@ void i_D7()
 {
 	unsigned char b;
 	D("xlat");
-	if (i32)
+	if (a32)
 	{
 		if (!read8(sel, r.ebx + r.al, &b))
 			return;
@@ -4998,7 +4686,7 @@ void i_DB()
 		ex(EX_COPROCESSOR_NA);
 		return;
 	}
-#if (FPU == 1)
+#if (ENABLE_FPU == 1)
 	r.al = 0;
 #endif
 	mod(0);
@@ -5182,9 +4870,9 @@ void i_E3()
 	}
 	else
 	{
-		D("jcxz %x", r.ip + d);
+		D("jcxz %x", r.eip + d);
 		if (r.cx == 0)
-			r.ip += d;
+			r.eip += d;
 	}
 }
 
@@ -5567,7 +5255,7 @@ void i_F7()
 				memcpy(pres64, &r.eax, 4);
 				memcpy(&pres64[4], &r.edx, 4);
 
-				res64 = ((unsigned long long)r.edx << 32) | r.eax;
+				// res64 = ((unsigned long long)r.edx << 32) | r.eax;
 				div32(res64, v32, &q32, &rm32);
 				r.eax = q32;
 				r.edx = rm32;

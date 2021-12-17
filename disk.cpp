@@ -25,40 +25,30 @@ void disk_init()
 	memset(&hdd, 0, sizeof(hdd));
 }
 
-int disk_set_fdd(int drive, const char *filename, int cyls, int heads, int sectors)
+int disk_set_fdd(int drive, int cyls, int heads, int sectors)
 {
 	if ((drive < 0) || (drive >= NUM_FDD))
 		return 0;
 
 	fdd_t *d = &fdd[drive];
 
-	if (d->fp != NULL)
-		fclose(d->fp);
-
 	memset(d, 0, sizeof(fdd_t));
-
-	d->fp = fopen(filename, "rb+");
 
 	d->cyls = cyls;
 	d->heads = heads;
 	d->sectors = sectors;
 
-	return d->fp != NULL;
+	return 1;
 }
 
-int disk_set_hdd(int drive, const char *filename, int cyls, int heads, int sectors)
+int disk_set_hdd(int drive, int cyls, int heads, int sectors)
 {
 	if ((drive < 0) || (drive >= NUM_HDD))
 		return 0;
 
 	hdd_t *d = &hdd[drive];
 
-	if (d->fp != NULL)
-		fclose(d->fp);
-
 	memset(d, 0, sizeof(hdd_t));
-
-	d->fp = fopen(filename, "rb+");
 
 	d->cyls = cyls;
 	d->heads = heads;
@@ -67,20 +57,11 @@ int disk_set_hdd(int drive, const char *filename, int cyls, int heads, int secto
 
 	d->irq_enabled = 1;
 
-	return d->fp != NULL;
+	return 1;
 }
 
 void disk_deinit()
 {
-	int i;
-
-	for (i = 0; i < NUM_FDD; i++)
-		if (fdd[i].fp != NULL)
-			fclose(fdd[i].fp);
-
-	for (i = 0; i < NUM_HDD; i++)
-		if (hdd[i].fp != NULL)
-			fclose(hdd[i].fp);
 }
 
 void disk_read()
@@ -89,7 +70,8 @@ void disk_read()
 	int lba;
 	int n;
 
-	FILE *fp = NULL;
+	void (*hw_read)(int, unsigned char *, unsigned int, unsigned int) = hw_read_floppy;
+
 	hdd_t *hd;
 	fdd_t *fd;
 
@@ -105,7 +87,6 @@ void disk_read()
 	if (drive < NUM_FDD)
 	{
 		fd = &fdd[drive];
-		fp = fd->fp;
 		numheads = fd->heads;
 		numsectors = fd->sectors;
 	}
@@ -113,12 +94,12 @@ void disk_read()
 	if ((drive & 0x80) && ((drive & 0x7F) < NUM_HDD))
 	{
 		hd = &hdd[drive & 0x7F];
-		fp = hd->fp;
+		hw_read = hw_read_hdd;
 		numheads = hd->heads;
 		numsectors = hd->sectors;
 	}
 
-	if (fp == NULL)
+	if (0)
 	{
 		// Error
 		r.flags |= F_C;
@@ -137,8 +118,7 @@ void disk_read()
 	if (n <= 0)
 		n = 1;
 
-	fseek(fp, lba * 512, SEEK_SET);
-	fread(&ram[es.value * 16 + r.bx], 512, n, fp);
+	hw_read(drive & 0x7F, &ram[es.value * 16 + r.bx], lba, n);
 
 	r.flags &= ~F_C;
 	r.ax = r.ax & 0xFF;
@@ -150,7 +130,7 @@ void disk_write()
 	int lba;
 	int n;
 
-	FILE *fp = NULL;
+	void (*hw_write)(int, const unsigned char *, unsigned int, unsigned int) = hw_write_floppy;
 	hdd_t *hd;
 	fdd_t *fd;
 
@@ -166,7 +146,6 @@ void disk_write()
 	if (drive < NUM_FDD)
 	{
 		fd = &fdd[drive];
-		fp = fd->fp;
 		numheads = fd->heads;
 		numsectors = fd->sectors;
 	}
@@ -174,12 +153,12 @@ void disk_write()
 	if ((drive & 0x80) && ((drive & 0x7F) < NUM_HDD))
 	{
 		hd = &hdd[drive & 0x7F];
-		fp = hd->fp;
+		hw_write = hw_write_hdd;
 		numheads = hd->heads;
 		numsectors = hd->sectors;
 	}
 
-	if (fp == NULL)
+	if (0)//fp == NULL)
 	{
 		// Error
 		r.flags |= F_C;
@@ -198,8 +177,9 @@ void disk_write()
 	if (n <= 0)
 		n = 1;
 
-	fseek(fp, lba * 512, SEEK_SET);
-	fwrite(&ram[es.value * 16 + r.bx], 512, n, fp);
+	hw_write(drive & 0x7F, &ram[es.value * 16 + r.bx], lba, n);
+	// fseek(fp, lba * 512, SEEK_SET);
+	// fwrite(&ram[es.value * 16 + r.bx], 512, n, fp);
 	
 	r.flags &= ~F_C;
 	r.ax = r.ax & 0xFF;
@@ -332,25 +312,30 @@ void ide_write(int port, unsigned char value)
 	d = &hdd[drive & ~1];
 	ch = &hdd[drive];
 
-	if (d->fp == NULL)
-		return;
-
 	switch (port | 0x80)
 	{
 		case 0x1F0:
+			if (ch->pos < sizeof(ch->buffer))
+			{
+				ch->buffer[ch->pos] = value;
+			}
 			ch->pos++;
 			if ((ch->cmd == HDD_CMD_WRITE) && (ch->numsectors > 0))
 			{
-				fwrite(&value, 1, 1, ch->fp);
 				if (ch->pos >= 512 * ch->numsectors)
 					ch->pos = 0;
 			}
 			break;
 		case 0x1F1:
-			ch->pos++;
 			if ((ch->cmd == HDD_CMD_WRITE) && (ch->numsectors > 0))
 			{
-				fwrite(&value, 1, 1, ch->fp);
+				ch->pos++;
+
+				if (ch->pos % 512 == 0)
+				{
+					d->lba++;
+					hw_write_hdd(drive, d->buffer, d->lba, 1);
+				}
 
 				if ((ch->pos % 512 == 0) && (ch->pos / 512 < ch->numsectors))
 					ide_irq(drive);
@@ -395,17 +380,16 @@ void ide_write(int port, unsigned char value)
 				case HDD_CMD_INIT:
 					break;
 				case HDD_CMD_READ:
-					fseek(ch->fp, lba * 512, SEEK_SET);
-					fread(ch->buffer, 512, d->numsectors, ch->fp);
+					ch->lba = lba;
+					hw_read_hdd(drive, ch->buffer, ch->lba, 1);
 					ch->pos = 0;
 					ch->have_data = d->numsectors * 512;
 					ide_irq(drive);
 					break;
 				case HDD_CMD_WRITE:
-					fseek(ch->fp, lba * 512, SEEK_SET);
+					ch->lba = lba;
 					ch->pos = 0;
 					ch->have_data = d->numsectors * 512;
-					ide_irq(drive);
 					break;
 				case HDD_CMD_SPECIFY:
 					ide_irq(drive);
@@ -448,38 +432,63 @@ unsigned char ide_read(int port)
 	hdd_t *d;
 	int r = 0;
 
+	// We read 16-bit ports in 2 transactions so we need this flag
+	// to know when OS reads data (1x1F0) or an error (0x1F1) register
+	static int last_0 = 0;
+
 	int drive = get_drive_number_by_port(port);
 
 	if (drive >= NUM_HDD)
-		return 0;//x21;
+		return 0;
 
 	d = &hdd[drive];
-
-	if (d->fp == NULL)
-		return 0;//x21;
 
 	switch (port | 0x80)
 	{
 		case 0x1F0:
+			r = d->buffer[d->pos++ % sizeof(d->buffer)];
+
+			if (d->pos % 512 == 0)
+			{
+				d->lba++;
+				hw_read_hdd(drive, d->buffer, d->lba, 1);
+			}
+
+			if ((d->numsectors > 0) && (d->cmd == HDD_CMD_READ) && (d->pos % 512 == 0) && (d->pos / 512 < d->numsectors))
+			{
+				ide_irq(drive);
+			}
+
 			if (d->have_data)
 			{
-				r = d->buffer[d->pos++ % sizeof(d->buffer)];
-			
-				if ((d->numsectors > 0) && (d->cmd == HDD_CMD_READ) && (d->pos % 512 == 0) && (d->pos / 512 < d->numsectors))
-					ide_irq(drive);
-			
 				d->have_data--;
 			}
 			break;
 		case 0x1F1:
-			if (d->have_data)
+			if (last_0)
 			{
 				r = d->buffer[d->pos++ % sizeof(d->buffer)];
 			
+				if (d->pos % 512 == 0)
+				{
+					d->lba++;
+					hw_read_hdd(drive, d->buffer, d->lba, 1);
+				}
+
+				if (d->have_data)
+				{
+					d->have_data--;
+				}
+
 				if ((d->numsectors > 0) && (d->cmd == HDD_CMD_READ) && (d->pos % 512 == 0) && (d->pos / 512 < d->numsectors))
-					ide_irq(drive);
-			
-				d->have_data--;
+				{
+					if (d->have_data)
+						ide_irq(drive);
+				}
+			}
+			else
+			{
+				r = d->error;
 			}
 			break;
 		case 0x1F2:
@@ -500,11 +509,11 @@ unsigned char ide_read(int port)
 				r |= 0x10;
 			break;
 		case 0x1F7:
+			irqs &= ~((1 << 15) | (1 << 14));
 			d->irq = 0;
 			r = ((d->have_data) ? 0x08 : 0) | 0x50;
 			break;
 		case 0x3F6:
-			// d->irq = 0;
 			r = ((d->have_data) ? 0x08 : 0) | 0x50;
 			break;
 		case 0x3F7:
@@ -512,5 +521,6 @@ unsigned char ide_read(int port)
 			break;
 	}
 
+	last_0 = (port & 7) == 0;
 	return r;
 }

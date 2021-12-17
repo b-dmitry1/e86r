@@ -55,7 +55,7 @@ public:
 	}
 };
 
-extern unsigned char ports[65536];
+extern unsigned char ports[1024];
 
 extern SmallBuffer keybuf;
 extern SmallBuffer mousebuf;

@@ -18,6 +18,30 @@
 #define VMODE_VGA320x200	0x13
 #define VMODE_VGA640x480x8	0x14
 
+#ifndef COLORREF
+#define COLORREF	unsigned int
+#endif
+
+#ifndef BYTE
+#define BYTE		unsigned char
+#endif
+
+#ifndef WORD
+#define WORD		unsigned short
+#endif
+
+#ifndef DWORD
+#define DWORD unsigned int
+#endif
+
+#ifndef RGB
+#define RGB(r,g,b)          ((COLORREF)(((BYTE)(r)|((WORD)((BYTE)(g))<<8))|(((DWORD)(BYTE)(b))<<16)))
+#endif
+
+#if (STM32)
+extern "C" unsigned long GetTickCount(void);
+#endif
+
 typedef union
 {
 	unsigned char b[4];
@@ -33,7 +57,6 @@ unsigned char cga_color_cr = 0;
 unsigned char vga_palette[1024] = {0};
 unsigned int ega_palette[16] = {0};
 int vga_pan = 0;
-unsigned int vram[1024 * 1024];
 int vga_3da = 0;
 int vga_pal_mask = 0xFF;
 int vga_pal_index = 0;
@@ -66,6 +89,8 @@ unsigned char vga_color_compare = 0;
 unsigned char vga_color_dontcare = 0;
 
 int svga_page = 0;
+
+extern unsigned char *scr;
 
 const unsigned int bit_fill[16] = 
 {
@@ -398,11 +423,18 @@ const unsigned long pal16_pcjr[16] = {
 };
 
 const unsigned long palcga[5][4] = {
+	{0, 10, 12, 14},
+	{0, 11, 13, 15},
+	{0, 10, 12, 14},
+	{0, 11, 13, 15},
+	{0, 10, 12, 14}
+/*
 	{BGR(0, 0, 0), BGR(0, 255, 0), BGR(255, 0, 0), BGR(255, 255, 0)},
 	{BGR(0, 0, 0), BGR(0, 255, 255), BGR(255, 0, 255), BGR(255, 255, 255)},
 	{BGR(0, 0, 0), BGR(0, 255, 0), BGR(255, 0, 0), BGR(255, 255, 96)},
 	{BGR(0, 0, 0), BGR(64, 255, 255), BGR(255, 64, 255), BGR(255, 255, 255)},
 	{BGR(0, 0, 0), BGR(0, 0, 255), BGR(64, 192, 192), BGR(255, 255, 255)}
+*/
 };
 
 void CGADrawChar8x8(int x, int y, int ch, int attr)
@@ -412,8 +444,8 @@ void CGADrawChar8x8(int x, int y, int ch, int attr)
 	unsigned char b, m;
 	unsigned long fg, bg;
 
-	fg = pal16[attr & 0x0F];
-	bg = pal16[(attr >> 4) & 0x0F];
+	fg = attr & 0x0F; //pal16[attr & 0x0F];
+	bg = (attr >> 4) & 0x0F; //pal16[(attr >> 4) & 0x0F];
 	for (i = 0; i < 8; i++)
 	{
 		for (j = 0, m = 0x80; j < 8; j++)
@@ -433,10 +465,10 @@ void CGADrawChar8x16r(int x, int y, int ch, int attr)
 	unsigned char b, m;
 	unsigned long fg, bg;
 
+	fg = attr & 0x0F; //pal16[attr & 0x0F];
+	bg = (attr >> 4) & 0x0F; //pal16[(attr >> 4) & 0x0F];
 	for (i = 0; i < 16; i++)
 	{
-		fg = pal16[attr & 0x0F];
-		bg = pal16[(attr >> 4) & 0x0F];
 		for (j = 0, m = 0x01; j < 8; j++)
 		{
 			b = *f;
@@ -454,10 +486,10 @@ void CGADrawChar8x16(int x, int y, int ch, int attr)
 	unsigned char b, m;
 	unsigned long fg, bg;
 
+	fg = attr & 0x0F; //pal16[attr & 0x0F];
+	bg = (attr >> 4) & 0x0F; //pal16[(attr >> 4) & 0x0F];
 	for (i = 0; i < 16; i++)
 	{
-		fg = pal16[attr & 0x0F];
-		bg = pal16[(attr >> 4) & 0x0F];
 		for (j = 0, m = 0x80; j < 8; j++)
 		{
 			b = *f;
@@ -508,7 +540,7 @@ void update_screen_text80_color()
 			if ((i == cy) && (j == cx))
 				if (blink)
 					for (k = 0; k < 8; k++)
-						set_pixel(k + j * 8, i * 16 + 15, pal16[p[1] & 0x0F]);
+						set_pixel(k + j * 8, i * 16 + 15, p[1] & 0x0F);//pal16[p[1] & 0x0F]);
 			p += 2;
 		}
 	}
@@ -610,7 +642,7 @@ void update_screen_vga320x200()
 	{
 		for (j = 0; j < 320; j++)
 		{
-			set_pixel_2x2(j, i, pal[*p++]);
+			set_pixel_2x2(j, i, *p++);//pal[*p++]);
 		}
 	}
 }
@@ -627,7 +659,7 @@ void update_screen_vga640x480x8()
 	{
 		for (j = 0; j < 640; j++)
 		{
-			set_pixel(j, i, pal[*p++]);
+			set_pixel(j, i, *p++);//pal[*p++]);
 		}
 		p += vga_pan;
 	}
@@ -680,6 +712,11 @@ void update_screen_vga320x200x()
 		return;
 	}
 
+#if (STM32)
+	unsigned short *fb = (unsigned short *)scr;
+	unsigned short cp;
+#endif
+	
 	for (i = 0; i < lines; i++)
 	{
 		for (j = 0; j < 320; j++)
@@ -689,10 +726,20 @@ void update_screen_vga320x200x()
 			else
 				d >>= 8;
 			b = d;
-			c = pal[b];
+			c = b;//pal[b];
+#if (STM32)
+			cp = b + (b << 8);
+			*fb = cp;
+			fb[320] = cp;
+			fb++;
+#else
 			set_pixel_2x2(j, i, c);
+#endif
 		}
 		p += vga_pan;
+#if (STM32)
+		fb += 320;
+#endif
 	}
 }
 
@@ -710,7 +757,7 @@ void update_screen_bw640x200()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel_1x2(k + j, i, c);
 			}
@@ -726,7 +773,7 @@ void update_screen_bw640x200()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel_1x2(k + j, i, c);
 			}
@@ -750,7 +797,7 @@ void update_screen_bw640x480()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel(k + j, i, c);
 			}
@@ -778,13 +825,13 @@ void update_screen_ega320x200d()
 			for (k = 0; k < 8; k++)
 			{
 				c = 0;
-				c = (b & 0x80) ? 1 : 0;
+				c = (b & 0x80) ? 4 : 0;
 				c |= (b & 0x8000) ? 2 : 0;
-				c |= (b & 0x800000) ? 4 : 0;
+				c |= (b & 0x800000) ? 1 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
 
-				set_pixel_2x2(j + k, i, BGR(vga_palette[c * 3] << 2, vga_palette[c * 3 + 1] << 2, vga_palette[c * 3 + 2] << 2));
+				set_pixel_2x2(j + k, i, c);
 			}
 		}
 		p += vga_pan;
@@ -815,7 +862,7 @@ void update_screen_ega640x350()
 				c |= (b & 0x800000) ? 4 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
-				set_pixel(k + j, i, ega_palette[c]);
+				set_pixel(k + j, i, c);
 			}
 		}
 		p += vga_pan;
@@ -826,6 +873,9 @@ void update_screen_vga640x480()
 {
 	int i, j, k;
 	const unsigned int *p;
+#if (STM32)
+	unsigned char *s = scr;
+#endif
 	unsigned char c;
 	unsigned long b;
 	p = vram;
@@ -836,12 +886,16 @@ void update_screen_vga640x480()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = (b & 0x80) ? 1 : 0;
+				c = (b & 0x80) ? 4 : 0;
 				c |= (b & 0x8000) ? 2 : 0;
-				c |= (b & 0x800000) ? 4 : 0;
+				c |= (b & 0x800000) ? 1 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
-				set_pixel(k + j, i, ega_palette[c]);
+#if (STM32)
+				*s++ = c;
+#else
+				set_pixel(k + j, i, c);
+#endif
 			}
 		}
 	}
@@ -965,6 +1019,11 @@ void vga_portwrite(unsigned short port, unsigned char value)
 						vga_palette[ac_index * 3 + 2] = (value & 0x01 ? 0x2A : 0) | (value & 0x08 ? 0x15 : 0);
 						vga_palette[ac_index * 3 + 1] = (value & 0x02 ? 0x2A : 0) | (value & 0x10 ? 0x15 : 0);
 						vga_palette[ac_index * 3 + 0] = (value & 0x04 ? 0x2A : 0) | (value & 0x20 ? 0x15 : 0);
+						
+						hw_set_palette(ac_index,
+							(value & 0x01 ? 0x80 : 0) | (value & 0x08 ? 0x40 : 0),
+							(value & 0x02 ? 0x80 : 0) | (value & 0x10 ? 0x40 : 0),
+							(value & 0x04 ? 0x80 : 0) | (value & 0x20 ? 0x40 : 0));
 					}
 				}
 			}
@@ -1036,6 +1095,13 @@ void vga_portwrite(unsigned short port, unsigned char value)
 				case 2:
 					vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 0] = value << 2;
 					vga_pal_index++;
+					
+					hw_set_palette(
+						(vga_pal_index & (vga_pal_mask << 2)) >> 2,
+						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 2],
+						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 1],
+						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 0]);
+					
 					break;
 			}
 			vga_pal_index++;
@@ -1049,6 +1115,9 @@ void vga_portwrite(unsigned short port, unsigned char value)
 		case 0x3D5:
 			if (crt_index < 32)
 				crt_regs[crt_index] = value;
+			break;
+		case 0x3D9:
+			cga_color_cr = value;
 			break;
 		case 0x3DC:
 			svga_page = value & 7;
@@ -1168,6 +1237,6 @@ void vga_memwrite(unsigned int addr, unsigned char value)
 			r = vga_logic(fill_color, v & write_mask);
 			break;
 	}
-	m = bit_fill[sq_regs[2] & 0x0F];
+	m = vga_plane_mask;
 	*p = (r & m) | (*p & (~m));
 }

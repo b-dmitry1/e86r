@@ -33,7 +33,6 @@
 
 typedef struct
 {
-	FILE *fp;
 	int cyls;
 	int heads;
 	int sectors;
@@ -41,7 +40,6 @@ typedef struct
 
 typedef struct
 {
-	FILE *fp;
 	int cyls;
 	int heads;
 	int sectors;
@@ -52,6 +50,7 @@ typedef struct
 	int head;
 	int sector;
 	int numsectors;
+	unsigned int lba;
 	int cmd;
 	int error;
 	int pos;
@@ -59,7 +58,7 @@ typedef struct
 	int irq;
 	int irq_enabled;
 	
-	unsigned char buffer[256 * 512];
+	unsigned char buffer[512];
 } hdd_t;
 
 typedef struct
@@ -118,10 +117,15 @@ typedef struct
 
 
 void disk_init();
-int disk_set_fdd(int drive, const char *filename, int cyls, int heads, int sectors);
-int disk_set_hdd(int drive, const char *filename, int cyls, int heads, int sectors);
+int disk_set_fdd(int drive, int cyls, int heads, int sectors);
+int disk_set_hdd(int drive, int cyls, int heads, int sectors);
 void disk_deinit();
 void bios_disk();
+
+void hw_read_floppy(int disk, unsigned char *buffer, unsigned int lba, unsigned int count);
+void hw_write_floppy(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count);
+void hw_read_hdd(int disk, unsigned char *buffer, unsigned int lba, unsigned int count);
+void hw_write_hdd(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count);
 
 void ide_write(int port, unsigned char value);
 unsigned char ide_read(int port);

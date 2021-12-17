@@ -271,7 +271,7 @@ typedef struct
 	const char *name;
 } selector_t;
 
-extern unsigned char ram[RAM_SIZE];
+extern unsigned char *ram;
 
 extern regs_t r;
 extern selector_t *sel;
@@ -345,6 +345,7 @@ void set_flags16(unsigned short value, unsigned int mask);
 
 void reset();
 void step();
+void check_irqs();
 void undefined_instr();
 
 #endif
