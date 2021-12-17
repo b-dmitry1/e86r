@@ -1,5 +1,5 @@
 # e86r
-Software 80486 PC emulator for Windows.
+Software 80486 IBM PC emulator for Windows and STM32 microcontrollers.
 
 ### Tested software
 * MSDOS 3.3 / 4.0 / 6.22
