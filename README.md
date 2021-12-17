@@ -60,6 +60,12 @@ Platform emulation error report function:
 
     void shutdown();
 
+To tell an emulator that key is pressed / released or mouse is moved use this functions:
+
+    void keydown(int xtcode);
+    void keyup(int xtcode);
+    void mousereport(int x, int y, int buttons);
+
 Emulation speed for STM32F429 @ 180 MHz and STM32F746 @ 192 MHz and L1 cache enabled (746):
 * Old CGA games - 30+ FPS - playable
 * Dune 2 - from 3 to 11 FPS - playable
