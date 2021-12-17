@@ -41,6 +41,25 @@ Please use Visual Studio 2012 or later version.
 There are several WinAPI calls in "main.cpp".
 They must be replaced with a target platform's equivalent functions.
 
+Platform graphic functions:
+
+    void hw_set_palette(unsigned char index, unsigned char r, unsigned char g, unsigned char b);
+    void set_pixel_2x2(int x, int y, unsigned int color);
+    void set_pixel_2x1(int x, int y, unsigned int color);
+    void set_pixel_1x2(int x, int y, unsigned int color);
+    void set_pixel(int x, int y, unsigned int color);
+
+Platform disk functions:
+
+    void hw_read_floppy(int disk, unsigned char *buffer, unsigned int lba, unsigned int count);
+    void hw_write_floppy(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count);
+    void hw_read_hdd(int disk, unsigned char *buffer, unsigned int lba, unsigned int count);
+    void hw_write_hdd(int disk, const unsigned char *buffer, unsigned int lba, unsigned int count);
+    
+Platform emulation error report function:
+
+    void shutdown();
+
 Emulation speed for STM32F429 @ 180 MHz and STM32F746 @ 192 MHz and L1 cache enabled (746):
 * Old CGA games - 30+ FPS - playable
 * Dune 2 - from 3 to 11 FPS - playable
@@ -49,6 +68,8 @@ Emulation speed for STM32F429 @ 180 MHz and STM32F746 @ 192 MHz and L1 cache ena
 * Transport Tycoon - from 0.1 to 0.2 FPS - not playable
 
 If you want to speed up an emulation on STM32 try to disable MMU support in memdescr.cpp file and remove all the CPU time-consuming things like RTOS or USB.
+
+STM32 port files will be published soon.
 
 ### Using disk images
 A path to your BIOS and disk image files can be set in the "loop" function located in the "main.cpp" file.
@@ -78,7 +99,10 @@ In the main.cpp file define a FDD and HDD images:
     hdd[1] = fopen("hd_oldlinux.img", "rb+");
     disk_set_hdd(1, 1023, 4, 20);
 
-Change BIOS file name to bios_fdd.bin or tell your BIOS to boot from floppy.
+Change BIOS file name to bios_fdd.bin or tell your BIOS to boot from floppy:
+
+    // Loading "bios.bin" (size = 8 KB) to 0xF0000 and 0xFE000
+    f = fopen("bios.bin", "rb");
 
 ### Known problems
 * V86 mode work incorrectly so Windows 95 will fail to start.
