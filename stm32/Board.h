@@ -813,7 +813,7 @@ public:
 		RCC->AHB1ENR |= RCC_AHB1ENR_GPIOHEN;
 		RCC->AHB1ENR |= RCC_AHB1ENR_GPIOIEN;
 		
-		// A0 - A11
+		// A0 - A12
 		f0.AlternateFast(12);
 		f1.AlternateFast(12);
 		f2.AlternateFast(12);
@@ -826,6 +826,7 @@ public:
 		f15.AlternateFast(12);
 		g0.AlternateFast(12);
 		g1.AlternateFast(12);
+		g2.AlternateFast(12);
 		
 		// D0 - D15
 		d14.AlternateFast(12);
