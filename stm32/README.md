@@ -31,3 +31,13 @@ USB keyboard report functions:
 USB mouse report functions:
 
     void mousereport(int x, int y, int buttons);
+
+### Known problems
+* Slow emulation of protected mode.
+* Same problems as in a PC version of e86r.
+
+### Disclaimer
+
+The project is provided "as is" without any warranty. Use at your own risk.
+
+Please tell me if you find some bug or if you plan to port it to another platform.
