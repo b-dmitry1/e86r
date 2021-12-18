@@ -75,7 +75,7 @@ Emulation speed for STM32F429 @ 180 MHz and STM32F746 @ 192 MHz and L1 cache ena
 
 If you want to speed up an emulation on STM32 try to disable MMU support in memdescr.cpp file and remove all the CPU time-consuming things like RTOS or USB.
 
-STM32 port files will be published soon.
+STM32 port files published here: https://github.com/b-dmitry1/e86r/tree/main/stm32
 
 ### Using disk images
 A path to your BIOS and disk image files can be set in the "loop" function located in the "main.cpp" file.
