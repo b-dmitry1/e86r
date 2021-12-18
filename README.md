@@ -93,7 +93,7 @@ The "empty.zip" file contains a clean 504 MB HDD image and a clean 1.44 MB flopp
 You can use any PC emulator to install an OS on it.
 
 ### Booting historical Linux 0.01
-You will need FDD and HDD i386 images called linuxfd.img and hd_oldlinux.img.
+You will need FDD and HDD i386 images called linuxfd.img and hd_oldlinux.img (can be found in the "diskimages" folder).
 
 In the main.cpp file define a FDD and HDD images:
 
@@ -108,7 +108,7 @@ In the main.cpp file define a FDD and HDD images:
 Change BIOS file name to bios_fdd.bin or tell your BIOS to boot from floppy:
 
     // Loading "bios.bin" (size = 8 KB) to 0xF0000 and 0xFE000
-    f = fopen("bios.bin", "rb");
+    f = fopen("bios_fdd.bin", "rb");
 
 ### Known problems
 * V86 mode work incorrectly so Windows 95 will fail to start.
