@@ -1,4 +1,4 @@
-# STM32F746 port of e86r
+# STM32F746 port of e86r, an opensource 80486 IBM PC emulator
 
 ![schematics](e86r746.png)
 
