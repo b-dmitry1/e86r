@@ -117,6 +117,7 @@ Change BIOS file name to bios_fdd.bin or tell your BIOS to boot from floppy:
 * No FPU emulation. If you need Linux please compile it with a soft emulation of FPU.
 * FreeDOS runs slower than MS-DOS, and Windows cannot use its himem.sys for some reason.
 
+### Disclaimer
 The project is provided "as is" without any warranty. Use at your own risk.
 
 Please tell me if you find some bug or if you plan to port it to another platform.
