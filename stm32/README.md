@@ -32,6 +32,18 @@ USB mouse report functions:
 
     void mousereport(int x, int y, int buttons);
 
+### Using WaveShare's Core7XXI board
+
+Instead of creating a custom PCB you can use WaveShare's Core7XXI board.
+
+In this case you'll need to add SD-card adapter, VGA connector, wires and at least 9 resistors like shown on a schematics drawing.
+
+__Please note that original Core7XXI board is shipped with only 8 megabytes of SDRAM installed!__
+The emulator is configured to be used with a 32 megabyte SDRAM chip.
+You should replace 8 MB chip with a 32 MB one or reconfigure both BIOS and SDRAM controller in "board.h" file.
+
+![Core 7XX board](Core7XX.jpg)
+
 ### Known problems
 * Slow emulation of protected mode.
 * Same problems as in a PC version of e86r.
