@@ -9,7 +9,9 @@ The project is configured for:
 * Keil μVision 5
 * arm-none-eabi-g++
 
-Compile script "1.bat" for Windows GNU compiler is included.
+Compile script "1.bat" for Windows GNU compiler is included. To use it just fix a path to arm-none-eabi-g++.exe and STM32 Cube Programmer in this file.
+
+If you plan to compile on a Linux machine you can easily convert "1.bat" to "1.sh". Or create a simple makefile.
 
 ### Disk image
 
