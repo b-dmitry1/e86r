@@ -1,6 +1,6 @@
 # STM32F746 port of e86r, an opensource 80486 IBM PC emulator
 
-![schematics](pictures/e86r746.png)
+![schematics](/pictures/e86r746.png)
 
 ### Compiling
 
@@ -49,7 +49,7 @@ The emulator is configured to be used with a 32 megabyte SDRAM chip.
 You should replace 8 MB chip with a 32 MB one and reconfigure BIOS, SDRAM controller, and framebuffer locations in "board.h" and "main.cpp" files
 if you want to use only 8 MB of SDRAM. Only 6 MB of extended memory will be available.
 
-![Core 7XX board](pictures/Core7XX.jpg)
+![Core 7XX board](/pictures/Core7XX.jpg)
 
 ### Known problems
 * Slow emulation of protected mode.
