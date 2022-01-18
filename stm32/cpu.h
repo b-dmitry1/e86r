@@ -135,9 +135,11 @@ extern FILE *c0;
 #define DESCR_CODE_C_R		0x1E
 #define DESCR_CODE_C_R_A	0x1F
 
+#pragma anon_unions
+#pragma pack(1)
 union regs_t
 {
-	__packed struct
+	struct
 	{
 		unsigned char al;
 		unsigned char ah;
@@ -271,6 +273,8 @@ typedef struct
 	const char *name;
 } selector_t;
 
+#pragma pack()
+
 extern unsigned char *ram;
 
 extern regs_t r;
@@ -312,6 +316,7 @@ extern unsigned int stack_not_mask;
 
 extern int i32;
 extern int a32;
+extern unsigned int a32mask;
 
 extern int num_pf;
 extern int num_gp;

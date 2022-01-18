@@ -9,6 +9,7 @@
 #include "pic_pit.h"
 #include "diskio.h"
 #include "disk.h"
+#include "alu.h"
 
 #define SCREEN_WIDTH		640
 #define SCREEN_HEIGHT		480
@@ -44,6 +45,8 @@ void tty(unsigned char ch)
 void show_regs()
 {
 	char s[50];
+	int i;
+	
 	sprintf(s, "eax = %08X", r.eax);
 	draw_debug_str(0, 0, s);
 	
@@ -83,11 +86,18 @@ void show_regs()
 
 	sprintf(s, "ins = %08X", instr_eip);
 	draw_debug_str(0, 4, s);
+
+	for (i = 0; i < 16; i++)
+	{
+		sprintf(s, "%.2X ", ram[cs.base + instr_eip - 5 + i]);
+		draw_debug_str(16 + i * 3, 4, s);
+	}
 }
 
 void shutdown()
 {
-	Serial1.print("error");
+	char s[80];
+	Serial1.print("undefined instr");
 	while (1)
 	{
 		update_screen();
@@ -100,9 +110,10 @@ void hw_set_palette(unsigned char index, unsigned char r, unsigned char g, unsig
 	ltdc.SetPalette(index, r, g, b);
 }
 
-unsigned char disk_cache[64][512];
-unsigned int disk_cache_lba[64];
-int disk_cache_hit[64] = {0};
+#define DISK_BLOCK_SIZE			64
+
+unsigned char hdd_block[512 * DISK_BLOCK_SIZE];
+int hdd_block_number = -1;
 
 void hw_read_floppy(int disk, unsigned char *buffer, unsigned int lba, unsigned int count)
 {
@@ -114,30 +125,28 @@ void hw_write_floppy(int disk, const unsigned char *buffer, unsigned int lba, un
 
 void hw_read_hdd(int disk, unsigned char *buffer, unsigned int lba, unsigned int count)
 {
-	unsigned int i;
+	// disk_read(0, buffer, lba, count);
+	// return;
 	
+	int b;
+	int i;
+	
+	// This works best after defrag - it will be a lot cache hits on a big games
 	for (i = 0; i < count; i++)
 	{
-		if (disk_cache_lba[lba & 63] == (lba & ~63))
+		/*
+		b = lba / DISK_BLOCK_SIZE;
+		
+		if (hdd_block_number != b)
 		{
-			memcpy(buffer, disk_cache[lba & 63], 512);
-			if (disk_cache_hit[lba & 63] < 5)
-				disk_cache_hit[lba & 63] += 3;
+			disk_read(0, hdd_block, b * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
+			hdd_block_number = b;
 		}
-		else
-		{
-			disk_read(0, buffer, lba, 1);
-			if (disk_cache_hit[lba & 63] == 0)
-			{
-				memcpy(disk_cache[lba & 63], buffer, 512);
-				disk_cache_lba[lba & 63] = lba & ~63;
-				disk_cache_hit[lba & 63] = 1;
-			}
-			else
-			{
-				disk_cache_hit[lba & 63]--;
-			}
-		}
+		memcpy(buffer, &hdd_block[(lba % DISK_BLOCK_SIZE) * 512], 512);
+		*/
+		
+		disk_read(0, buffer, lba, 1);
+		
 		buffer += 512;
 		lba++;
 	}
@@ -224,14 +233,13 @@ void main_task()
 {
 	int i;
 
+	memset(ram, 0, 4096 * 1024);
+
 	memset(scr, 0, 640 * 480);
 	
 	// Manually load BIOS image from bios.cpp file
 	memcpy(&ram[0xF0000], bios, sizeof(bios));
 	memcpy(&ram[0xFE000], bios, sizeof(bios));
-	
-	// Init disk cache
-	memset(disk_cache_lba, 0xFF, sizeof(disk_cache_lba));
 	
 	disk_init();
 	
@@ -243,9 +251,10 @@ void main_task()
 
 	while (1)
 	{
-		for (i = 0; i < 2000; i++)
+		for (i = 0; i < 10000; i++)
 		{
 			step();
+			
 			step();
 			step();
 
@@ -263,13 +272,12 @@ void main_task()
 			step();
 			step();
 			step();
-
+			
 			step();
 			step();
 			step();
 			step();
-			step();
-
+			
 			check_irqs();
 
 			// VGA hsync / vsync
@@ -291,12 +299,14 @@ void main_task()
 		}
 
 		disk_timerproc();
-		
+
 		if (vmode != 0x14)
 		{
 			// Redraw the screen for all video modes except SVGA
 			update_screen();
 		}
+		
+		// show_regs();
 	}
 }
 
@@ -309,9 +319,9 @@ int main()
 	SysTick->CTRL = 0;
 	
 	Serial1.begin(115200, SERIAL_8N1);
-	
+
 	Serial1.print("\nSerial port: OK\n");
-	
+
 	for (w = 0; w < 10000; w++);
 	
 	Serial1.print("\nMPU: ");
@@ -366,7 +376,7 @@ int main()
 	Serial1.print("OK\n");
 
 	NVIC_DisableIRQ(LTDC_IRQn);
-
+	
 	Serial1.print("Starting\n");
 
 	main_task();

@@ -401,6 +401,7 @@ unsigned long long imul32(int a, int b)
 		r.flags &= ~(F_C | F_O);
 	else
 		r.flags |= F_C | F_O;
+
 	return res;
 }
 
@@ -446,6 +447,7 @@ unsigned long long mul32(unsigned int a, unsigned int b)
 		r.flags |= F_C | F_O;
 	else
 		r.flags &= ~(F_C | F_O);
+
 	return res;
 }
 
@@ -464,8 +466,8 @@ int idiv8(short a, char b, char *q, char *r)
 	*r = a % b;
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		ex(0);
+		return 0;
 	}
 	return 1;
 }
@@ -485,8 +487,8 @@ int idiv16(int a, short b, short *q, short *r)
 	*r = a % b;
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		ex(0);
+		return 0;
 	}
 	return 1;
 }
@@ -506,8 +508,8 @@ int idiv32(long long a, int b, int *q, int *r)
 	*r = (int)(a - *q * (long long)b);
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		ex(0);
+		return 0;
 	}
 	return 1;
 }
@@ -525,29 +527,15 @@ int div8(unsigned short a, unsigned char b, unsigned char *q, unsigned char *r)
 	*r = a % b;
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		//ex(0);
+		//return 0;
 	}
 	return 1;
 }
 
-void draw_debug_str(int x, int y, const char *s);	
-void show_regs();
-
 int div16(unsigned int a, unsigned short b, unsigned short *q, unsigned short *r)
 {
 	unsigned int qu;
-	if (b == 0)
-	{
-		/*
-		while (1)
-		{
-			show_regs();
-		}
-		*/
-		
-		b = 1;
-	}
 	if (b == 0)
 	{
 		ex(0);
@@ -558,8 +546,8 @@ int div16(unsigned int a, unsigned short b, unsigned short *q, unsigned short *r
 	*r = a % b;
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		ex(0);
+		return 0;
 	}
 	return 1;
 }
@@ -577,8 +565,8 @@ int div32(unsigned long long a, unsigned long long b, unsigned int *q, unsigned 
 	*r = (unsigned int)(a % b);
 	if (qu != *q)
 	{
-		// ex(0);
-		// return 0;
+		ex(0);
+		return 0;
 	}
 	return 1;
 }
@@ -586,7 +574,7 @@ int div32(unsigned long long a, unsigned long long b, unsigned int *q, unsigned 
 unsigned short dshl16(unsigned short a, unsigned short b, unsigned short n)
 {
 	unsigned short v;
-	if (n > 16)
+	if (n > 16 && 0)
 	{
 		a = b;
 		n -= 16;
@@ -617,7 +605,7 @@ unsigned int dshl32(unsigned int a, unsigned int b, unsigned int n)
 unsigned short dshr16(unsigned short a, unsigned short b, unsigned short n)
 {
 	unsigned short v;
-	if (n > 16)
+	if (n > 16 && 0)
 	{
 		a = b;
 		n -= 16;

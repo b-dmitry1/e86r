@@ -24,7 +24,7 @@ unsigned char bcd(unsigned char value)
 
 void update_rtc()
 {
-	/*
+#if (PC)
 	SYSTEMTIME tm;
 	unsigned char prev[10];
 
@@ -42,18 +42,7 @@ void update_rtc()
 
 	if (memcmp(prev, &cmos, 10))
 		cmos.updateA = 1;
-	*/
-
-
-	cmos.second = bcd(1);
-	cmos.min = bcd(2);
-	cmos.hour = bcd(3);
-	cmos.dow = bcd(4);
-	cmos.day = bcd(5);
-	cmos.month = bcd(6);
-	cmos.yearmod100 = bcd(7);
-	
-	cmos.updateA = 0;
+#endif
 }
 
 unsigned char cmos_read(int port)

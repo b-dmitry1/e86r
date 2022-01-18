@@ -67,8 +67,6 @@ unsigned char ac_regs[32];
 unsigned char sq_regs[16] = {0, 0, 0, 0, 0xFF};
 unsigned char gc_regs[32];
 
-unsigned int sq2_fill = 0xFFFFFFFFu;
-
 unsigned char ac_index = 0;
 unsigned char sq_index = 0;
 unsigned char gc_index = 0;
@@ -430,9 +428,14 @@ const unsigned long palcga[5][4] = {
 	{0, 10, 12, 14},
 	{0, 11, 13, 15},
 	{0, 10, 12, 14}
+/*
+	{BGR(0, 0, 0), BGR(0, 255, 0), BGR(255, 0, 0), BGR(255, 255, 0)},
+	{BGR(0, 0, 0), BGR(0, 255, 255), BGR(255, 0, 255), BGR(255, 255, 255)},
+	{BGR(0, 0, 0), BGR(0, 255, 0), BGR(255, 0, 0), BGR(255, 255, 96)},
+	{BGR(0, 0, 0), BGR(64, 255, 255), BGR(255, 64, 255), BGR(255, 255, 255)},
+	{BGR(0, 0, 0), BGR(0, 0, 255), BGR(64, 192, 192), BGR(255, 255, 255)}
+*/
 };
-
-extern unsigned char *scr;
 
 void CGADrawChar8x8(int x, int y, int ch, int attr)
 {
@@ -523,12 +526,12 @@ void update_screen_text80_color()
 	int i, j, k;
 	const unsigned char *p = &ram[0xb8000];
 	int cur = crt_regs[0x0E] * 256 + crt_regs[0x0F];
-	static int blink = 0;//GetTickCount() % 1000 < 500;
+	static int blink = 0;
 	p += (crt_regs[12] * 256 + crt_regs[13]) * 2;
 	cur -= crt_regs[12] * 256 + crt_regs[13];
 
-	blink = !blink;
-	
+	blink++;
+
 	int cx = cur % 80;
 	int cy = cur / 80;
 	for (i = 0; i < 25; i++)
@@ -537,7 +540,7 @@ void update_screen_text80_color()
 		{
 			CGADrawChar8x16(j * 8, i * 16, p[0], p[1]);
 			if ((i == cy) && (j == cx))
-				if (blink)
+				if (blink & 4)
 					for (k = 0; k < 8; k++)
 						set_pixel(k + j * 8, i * 16 + 15, p[1] & 0x0F);//pal16[p[1] & 0x0F]);
 			p += 2;
@@ -552,7 +555,7 @@ void update_screen_col320x200()
 	unsigned char b;
 	unsigned long c;
 	int cgapalindex;
-	
+
 	cgapalindex = 2;
 	if (cga_color_cr & 4)
 	{
@@ -636,30 +639,18 @@ void update_screen_vga320x200()
 	const unsigned char *p;
 	const unsigned long *pal = (const unsigned long *)vga_palette;
 
-	unsigned short *v = (unsigned short *)scr;
-	unsigned short c;
-	
 	p = &ram[0xA0000];
 	for (i = 0; i < 200; i++)
 	{
 		for (j = 0; j < 320; j++)
 		{
-			c = *p++;
-			c |= c << 8;
-			v[0] = c;
-			v[320] = c;
-			v++;
-			// set_pixel_2x2(j, i, *p++);//pal[*p++]);
+			set_pixel_2x2(j, i, *p++);//pal[*p++]);
 		}
-		v += 320;
 	}
 }
 
 void update_screen_vga640x480x8()
 {
-#if (STM32)
-	memcpy(scr, vram, 640 * 480);
-#else
 	int i, j;
 	const unsigned char *p;
 	const unsigned long *pal = (const unsigned long *)vga_palette;
@@ -674,7 +665,6 @@ void update_screen_vga640x480x8()
 		}
 		p += vga_pan;
 	}
-#endif
 }
 
 void update_screen_vga320x200x()
@@ -749,7 +739,9 @@ void update_screen_vga320x200x()
 #endif
 		}
 		p += vga_pan;
+#if (STM32)
 		fb += 320;
+#endif
 	}
 }
 
@@ -767,7 +759,7 @@ void update_screen_bw640x200()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel_1x2(k + j, i, c);
 			}
@@ -783,7 +775,7 @@ void update_screen_bw640x200()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel_1x2(k + j, i, c);
 			}
@@ -807,7 +799,7 @@ void update_screen_bw640x480()
 			b = *p++;
 			for (k = 0; k < 8; k++)
 			{
-				c = b & 0x80 ? BGR(255, 255, 255) : BGR(0, 0, 128);
+				c = b & 0x80 ? 15 : 0;
 				b <<= 1;
 				set_pixel(k + j, i, c);
 			}
@@ -835,13 +827,13 @@ void update_screen_ega320x200d()
 			for (k = 0; k < 8; k++)
 			{
 				c = 0;
-				c = (b & 0x80) ? 1 : 0;
+				c = (b & 0x80) ? 4 : 0;
 				c |= (b & 0x8000) ? 2 : 0;
-				c |= (b & 0x800000) ? 4 : 0;
+				c |= (b & 0x800000) ? 1 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
 
-				set_pixel_2x2(j + k, i, c);//BGR(vga_palette[c * 3] << 2, vga_palette[c * 3 + 1] << 2, vga_palette[c * 3 + 2] << 2));
+				set_pixel_2x2(j + k, i, c);
 			}
 		}
 		p += vga_pan;
@@ -872,7 +864,7 @@ void update_screen_ega640x350()
 				c |= (b & 0x800000) ? 4 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
-				set_pixel(k + j, i, c);//ega_palette[c]);
+				set_pixel(k + j, i, c);
 			}
 		}
 		p += vga_pan;
@@ -883,11 +875,12 @@ void update_screen_vga640x480()
 {
 	int i, j, k;
 	const unsigned int *p;
-	unsigned char *s;
+#if (STM32)
+	unsigned char *s = scr;
+#endif
 	unsigned char c;
 	unsigned long b;
 	p = vram;
-	s = scr;
 	for (i = 0; i < 480; i++)
 	{
 		for (j = 0; j < 640; j += 8)
@@ -900,8 +893,11 @@ void update_screen_vga640x480()
 				c |= (b & 0x800000) ? 1 : 0;
 				c |= (b & 0x80000000ul) ? 8 : 0;
 				b <<= 1;
+#if (STM32)
 				*s++ = c;
-				// set_pixel(k + j, i, c);//ega_palette[c]);
+#else
+				set_pixel(k + j, i, c);
+#endif
 			}
 		}
 	}
@@ -1020,7 +1016,7 @@ void vga_portwrite(unsigned short port, unsigned char value)
 						(value & 0x01 ? 0xAA : 0) | (value & 0x08 ? 0x55 : 0),
 						(value & 0x02 ? 0xAA : 0) | (value & 0x10 ? 0x55 : 0),
 						(value & 0x04 ? 0xAA : 0) | (value & 0x20 ? 0x55 : 0));
-					if ((vmode > 7) && (vmode < 0x13))
+					if (vmode < 0x13)
 					{
 						vga_palette[ac_index * 3 + 2] = (value & 0x01 ? 0x2A : 0) | (value & 0x08 ? 0x15 : 0);
 						vga_palette[ac_index * 3 + 1] = (value & 0x02 ? 0x2A : 0) | (value & 0x10 ? 0x15 : 0);
@@ -1101,11 +1097,13 @@ void vga_portwrite(unsigned short port, unsigned char value)
 				case 2:
 					vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 0] = value << 2;
 					vga_pal_index++;
+					
 					hw_set_palette(
 						(vga_pal_index & (vga_pal_mask << 2)) >> 2,
 						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 2],
 						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 1],
 						vga_palette[(vga_pal_index & (vga_pal_mask << 2)) | 0]);
+					
 					break;
 			}
 			vga_pal_index++;
@@ -1129,8 +1127,6 @@ void vga_portwrite(unsigned short port, unsigned char value)
 	}
 }
 
-int port_3da_read = 0;
-
 unsigned char vga_portread(unsigned short port)
 {
 	static int p3da = 0;
@@ -1139,7 +1135,6 @@ unsigned char vga_portread(unsigned short port)
 		case 0x3ba:
 		case 0x3da:
 			ac_index_state = 1;
-			port_3da_read = 1;
 			p3da++;
 			return ports[port];
 			return /*ports[port];*/(p3da & 0x04 ? 1 : 0) + (p3da & 0x100 ? 8 : 0);
@@ -1184,11 +1179,7 @@ unsigned char vga_memread(unsigned int addr)
 
 	if (vmode == 0x14)
 	{
-#if (STM32)
-		c = (unsigned char *)scr;
-#else
 		c = (unsigned char *)vram;
-#endif
 		return c[addr - 0xA0000 + svga_page * 65536u];
 	}
 
@@ -1210,14 +1201,10 @@ void vga_memwrite(unsigned int addr, unsigned char value)
 	unsigned int v, r, m;
 	unsigned int *p;
 	unsigned char *c;
-
+	
 	if (vmode == 0x14)
 	{
-#if (STM32)
-		c = (unsigned char *)scr;
-#else
 		c = (unsigned char *)vram;
-#endif
 		c[addr - 0xA0000 + svga_page * 65536u] = value;
 		return;
 	}
@@ -1229,7 +1216,6 @@ void vga_memwrite(unsigned int addr, unsigned char value)
 	}
 
 	p = &vram[addr - 0xA0000];
-	
 	switch (vga_write_mode)
 	{
 		case 0:
@@ -1253,6 +1239,6 @@ void vga_memwrite(unsigned int addr, unsigned char value)
 			r = vga_logic(fill_color, v & write_mask);
 			break;
 	}
-	m = vga_plane_mask;//bit_fill[sq_regs[2] & 0x0F];
+	m = vga_plane_mask;
 	*p = (r & m) | (*p & (~m));
 }

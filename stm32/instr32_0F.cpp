@@ -128,6 +128,9 @@ void f32_01()
 			readmod(&d);
 			lmsw(d);
 			return;
+		//case 7:
+			//D("invlpg");
+			//return;
 	}
 	undefined32(0x01);
 }

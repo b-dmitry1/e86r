@@ -4,7 +4,6 @@
 #define PC						0
 #define STM32					1
 
-#pragma anon_unions
 
 // System RAM size
 #define RAM_SIZE				16777216u
@@ -30,7 +29,7 @@
 
 // Disk drives
 #define NUM_FDD					1
-#define NUM_HDD					2
+#define NUM_HDD					1
 
 
 // Set to 1 if you don't want to see registers in the main window

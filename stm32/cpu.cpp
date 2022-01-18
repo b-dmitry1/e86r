@@ -7,7 +7,7 @@
 #include "pic_pit.h"
 #include "config.h"
 
-extern unsigned char ports[65536];
+extern unsigned char ports[1024];
 
 regs_t r;
 selector_t *sel;
@@ -41,6 +41,7 @@ unsigned int tsslimit = 0;
 
 int i32 = 0;
 int a32 = 0;
+unsigned int a32mask = 0xFFFFFFFFu;
 
 int dir1 = 1;
 int dir2 = 2;
@@ -241,8 +242,6 @@ void reset()
 	fs.name = "fs";
 	gs.name = "gs";
 	
-	// cr[0] |= CR0_EM;
-
 	r.eip = 0;
 #if (CPU < 286)
 	set_flags(0xF002, 0xFFFFFFFFu);
@@ -274,42 +273,43 @@ int instr_count[512] = {0};
 
 int open_log = 0;
 
-static int wait_iret = 0;
-
 void check_irqs()
 {
 	int nextint;
 
-	if ((r.eflags & F_I) && (!wait_iret))
+	if (r.eflags & F_I)
 	{
 		nextint = get_next_irq_vector();
 		if (nextint > 0)
 		{
 			interrupt(nextint, -1, 0);
-			wait_iret = 1;
 			return;
 		}
 	}
 }
 
-void show_regs();
-
-int slow = 0;
-
 void step()
 {
-	int i;
-	
-	/*
 	if (hlt && (irqs == 0))
 		return;
 	hlt = 0;
-	*/
-	
+
 	repe = repne = 0;
 
 	i32 = cs.big;
 	a32 = cs.big;
+
+	if (!cs.big)
+	{
+		r.iph = 0;
+	}
+
+	if (!ss.big)
+	{
+		r.sph = 0;
+	}
+
+	a32mask = cs.big ? 0xFFFFFFFFu : 0xFFFFu;
 
 	sel = &ds;
 	ssel = &ss;
@@ -329,10 +329,30 @@ void step()
 	// instr_fl = r.eflags;
 
 #if (PC)
+
+	if (dasm == NULL && pmode)
+	{
+		if (cs.value == 0x18)
+		{
+			if (instr_eip >= 0x124e - 10 && instr_eip <= 0x124e + 10)
+			{
+				open_log = 1;
+			}
+		}
+	}
+
 	if ((dasm == NULL) && (open_log))
 	{
 		fopen_s(&dasm, "386.dasm", "wt");
 
+		int i;
+		D("\n%.4X:%.8X  ", cs.value, instr_eip - 5);
+		for (i = 0; i < 64; i++)
+		{
+			D("%.2X ", ram[cs.base + instr_eip - 5 + i]);
+		}
+		D("\n");
+		
 		cycle = 0;
 	}
 #endif
@@ -343,9 +363,6 @@ void step()
 	D("%.4X:%.8X       ", cs.value, instr_eip);
 
 	D("%.2X  ", opcode);
-
-	if (opcode == 0xCF)
-		wait_iret = 0;
 
 	instrs[opcode]();
 
@@ -363,7 +380,7 @@ void step()
 	D("  di: %.8X\n", r.edi);
 	D("  ip: %.8X\n", r.eip);
 	D("  fl: %.8X\n", r.eflags);
-	D("  ds: %.4x\n", ds.value);
+	D("  ds: %.4x / %.8X\n", ds.value, ds.base);
 	D("  cr0: %.8x\n", cr[0]);
 }
 

@@ -4,7 +4,7 @@
 #include "alu.h"
 #include "ioports.h"
 
-#define FAST_DIR	1
+#define FAST_DIR	0
 
 int movsb()
 {

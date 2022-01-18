@@ -7,7 +7,7 @@ pic_t pic2;
 
 pit_t pit = {0, 0, 0, 0, 0, 0, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu, 0xFFFFu};
 
-int test_irq = 0;
+
 int current_irq = -1;
 
 void irq(int n)
@@ -17,41 +17,62 @@ void irq(int n)
 
 int get_next_irq_vector()
 {
+	int m;
+	int test_irq;
+	
 	if (current_irq >= 0)
-		return -1;
-
-	test_irq++;
-	if (test_irq > 15)
-		test_irq = 0;
-
-	irqs &= (1 << 14) | (1 << 4) | (1 << 1) | (1 << 0);
-
-	if (irqs & (1 << test_irq) & (~(pic.imr | (pic2.imr << 8))) & (~(pic.isr | (pic2.isr << 8))))
 	{
-		if (test_irq < 8)
-		{
-			if ((pic.icw[2] & 0xF8) == 0)
-				return -1;
-		}
-		else
-		{
-			if ((pic2.icw[2] & 0xF8) == 0)
-				return -1;
-		}
+		return -1;
+	}
 
-		current_irq = test_irq;
+	if (irqs == 0)
+	{
+		return -1;
+	}
 
-		irqs &= ~(1 << current_irq);
+	m = irqs &
+		(1 << 14) | (1 << 4) | (1 << 1) | (1 << 0) &
+		(~(pic.imr | (pic2.imr << 8))) &
+		(~(pic.isr | (pic2.isr << 8)));
+
+	if (m == 0)
+	{
+		return -1;
+	}
+
+	// Find an active interrupt
+	// We need to check all the interrupts frequently or Linux 0.01 will not start
+	test_irq = m & 0xFF ? 0 : 8;
+
+	for (; test_irq < 15; test_irq++)
+	{
+		if (irqs & (1 << test_irq))
+		{
+			if (test_irq < 8)
+			{
+				if ((pic.icw[2] & 0xF8) == 0)
+					return -1;
+			}
+			else
+			{
+				if ((pic2.icw[2] & 0xF8) == 0)
+					return -1;
+			}
+
+			current_irq = test_irq;
+
+			irqs &= ~(1 << current_irq);
 		
-		if (current_irq < 8)
-		{
-			pic.isr |= 1 << (current_irq & 7);
-			return (pic.icw[2] & 0xF8) + (current_irq & 7);
-		}
-		else
-		{
-			pic2.isr |= 1 << (current_irq & 7);
-			return (pic2.icw[2] & 0xF8) + (current_irq & 7);
+			if (current_irq < 8)
+			{
+				pic.isr |= 1 << (current_irq & 7);
+				return (pic.icw[2] & 0xF8) + (current_irq & 7);
+			}
+			else
+			{
+				pic2.isr |= 1 << (current_irq & 7);
+				return (pic2.icw[2] & 0xF8) + (current_irq & 7);
+			}
 		}
 	}
 
@@ -60,7 +81,7 @@ int get_next_irq_vector()
 
 void pit_step()
 {
-	if (pit.value[0] < 50)
+	if (pit.value[0] < 100)
 	{
 		pit.value[0] = pit.preset[0];
 		irq(0);

@@ -1,10 +1,15 @@
 # STM32F746 port of e86r, an opensource 80486 IBM PC emulator
 
-![schematics](e86r746.png)
+![schematics](pictures/e86r746.png)
 
 ### Compiling
 
-Keil μVision 5 is needed to compile the project.
+The project is configured for:
+
+* Keil μVision 5
+* arm-none-eabi-g++
+
+Compile script "1.bat" for Windows GNU compiler is included.
 
 ### Disk image
 
@@ -44,7 +49,7 @@ The emulator is configured to be used with a 32 megabyte SDRAM chip.
 You should replace 8 MB chip with a 32 MB one and reconfigure BIOS, SDRAM controller, and framebuffer locations in "board.h" and "main.cpp" files
 if you want to use only 8 MB of SDRAM. Only 6 MB of extended memory will be available.
 
-![Core 7XX board](Core7XX.jpg)
+![Core 7XX board](pictures/Core7XX.jpg)
 
 ### Known problems
 * Slow emulation of protected mode.

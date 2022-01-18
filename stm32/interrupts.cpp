@@ -399,7 +399,7 @@ void interrupt(int n, int errorcode, int intflags)
 					push32(errorcode);
 				
 				// Set CPL to new code segment DPL;
-				
+				cpl = csd.dpl;
 
 				// Set RPL of CS to CPL;
 				cs.value &= 0xFFFC;
@@ -445,6 +445,9 @@ void interrupt(int n, int errorcode, int intflags)
 					return;
 				r.eip = g.offset0_15 + g.offset_16_31 * 65536u;
 
+				// ???
+				// cpl = cs.dpl;
+
 				// Load CS descriptor into invisible portion of CS register;
 				// Set the RPL field of CS to CPL;
 				cs.value &= 0xFFFC;
@@ -467,6 +470,8 @@ void interrupt(int n, int errorcode, int intflags)
 			// TASK-GATE
 			break;
 	}
+
+	ex(EX_GP, n * 8 + 2);
 }
 
 void ex(int n, int errorcode)
